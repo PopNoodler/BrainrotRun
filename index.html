@@ -75,11 +75,12 @@
   <button class="btn" id="againBtn">RUN AGAIN ▶</button>
 </div>
 
-<div id="verTag">BRAINROT RUSH 3D v3</div>
+<div id="verTag">BRAINROT RUSH 3D v4</div>
+<div id="err" style="position:fixed;left:8px;right:8px;bottom:24px;z-index:30;display:none;background:rgba(120,10,20,.92);color:#fff;font:600 12px monospace;padding:8px 12px;border-radius:8px;white-space:pre-wrap"></div>
 
 <script type="module">
 import * as THREE from 'three';
-const GAME_VERSION='v3';
+const GAME_VERSION='v4';
 const el=id=>document.getElementById(id);
 
 // ============ renderer / scene / camera ============
@@ -126,27 +127,70 @@ for(let i=0;i<24;i++){ const bh=8+Math.random()*22, side=i%2?1:-1;
   const b=new THREE.Mesh(new THREE.BoxGeometry(4+Math.random()*3,bh,4+Math.random()*4), bMats[i%bMats.length]);
   b.position.set(side*(11+Math.random()*8), bh/2-1, i*11); scene.add(b); buildings.push(b); }
 
-// ============ player: Tung Tung Tung Sahur (wooden bat guy) ============
+// ============ 3D MODEL PIPELINE ============
+// Procedural character factory: PBR materials + generated textures + detailed geometry.
+// Each brainrot character is a data-driven build() so the roster is easy to extend/swap
+// (and later we can drop in authored/AI .glb via GLTFLoader without touching game code).
+function woodTexture(base){ const c=document.createElement('canvas'); c.width=96; c.height=256; const g=c.getContext('2d');
+  g.fillStyle=base||'#c98a4e'; g.fillRect(0,0,96,256);
+  for(let i=0;i<46;i++){ const dk=Math.random()<0.5; g.strokeStyle='rgba('+(dk?90:170)+','+(dk?52:110)+','+(dk?24:60)+','+(0.10+Math.random()*0.22)+')'; g.lineWidth=0.8+Math.random()*2.2;
+    g.beginPath(); const x=Math.random()*96; g.moveTo(x,0); for(let y=0;y<=256;y+=14) g.lineTo(x+Math.sin(y*0.045+i)*4, y); g.stroke(); }
+  for(let i=0;i<7;i++){ g.strokeStyle='rgba(70,40,18,0.5)'; g.lineWidth=2; g.beginPath(); const cx=Math.random()*96, cy=Math.random()*256; g.ellipse(cx,cy,3+Math.random()*4,7+Math.random()*8,0,0,7); g.stroke(); } // knots
+  const t=new THREE.CanvasTexture(c); t.anisotropy=4; return t; }
+
+const M = {
+  wood:  new THREE.MeshStandardMaterial({ map:woodTexture('#c98a4e'), color:0xffffff, roughness:0.82, metalness:0.04 }),
+  woodD: new THREE.MeshStandardMaterial({ map:woodTexture('#8a5730'), color:0xffffff, roughness:0.88, metalness:0.03 }),
+  bat:   new THREE.MeshStandardMaterial({ map:woodTexture('#a9743e'), color:0xffffff, roughness:0.7,  metalness:0.05 }),
+  white: new THREE.MeshStandardMaterial({ color:0xffffff, roughness:0.35 }),
+  black: new THREE.MeshStandardMaterial({ color:0x14110d, roughness:0.5 }),
+  brow:  new THREE.MeshStandardMaterial({ color:0x3a2411, roughness:0.8 }),
+  mouth: new THREE.MeshStandardMaterial({ color:0x4a1010, roughness:0.6 }),
+  cloth: new THREE.MeshStandardMaterial({ color:0xe8e2d0, roughness:0.9 }),
+};
+function part(geo,mat,x,y,z,rx,ry,rz){ const m=new THREE.Mesh(geo,mat); m.position.set(x||0,y||0,z||0); if(rx)m.rotation.x=rx; if(ry)m.rotation.y=ry; if(rz)m.rotation.z=rz; return m; }
+
+// -- Tung Tung Tung Sahur: a wooden club/baton guy with an angry face + baseball bat --
 function buildSahur(){
   const g=new THREE.Group();
-  const wood=new THREE.MeshLambertMaterial({color:0xc98a4e});
-  const woodD=new THREE.MeshLambertMaterial({color:0x8f5c2e});
-  const body=new THREE.Mesh(new THREE.CylinderGeometry(0.6,0.72,2.4,12), wood); body.position.y=1.5; g.add(body);
-  const top=new THREE.Mesh(new THREE.SphereGeometry(0.6,12,10,0,Math.PI*2,0,Math.PI/2), wood); top.position.y=2.7; g.add(top);
-  // eyes
-  const white=new THREE.MeshLambertMaterial({color:0xffffff}), black=new THREE.MeshLambertMaterial({color:0x111111});
-  for(const ex of [-0.22,0.22]){ const e=new THREE.Mesh(new THREE.SphereGeometry(0.17,10,8),white); e.position.set(ex,2.35,0.5); g.add(e);
-    const p=new THREE.Mesh(new THREE.SphereGeometry(0.08,8,6),black); p.position.set(ex,2.35,0.63); g.add(p); }
-  // mouth
-  const mouth=new THREE.Mesh(new THREE.CircleGeometry(0.2,12), new THREE.MeshLambertMaterial({color:0x5a1414})); mouth.position.set(0,1.95,0.58); g.add(mouth);
-  // arms
+  // body: smooth rounded wooden log (capsule), slightly tapered feel via a cap on top
+  const body=part(new THREE.CapsuleGeometry(0.62,1.5,8,20), M.wood, 0,1.55,0); g.add(body);
+  const crown=part(new THREE.SphereGeometry(0.63,20,16), M.wood, 0,2.55,0); crown.scale.set(1,0.7,1); g.add(crown);
+  // head-wrap band (sahur cloth) for character
+  const band=part(new THREE.CylinderGeometry(0.66,0.66,0.24,20), M.cloth, 0,2.28,0); g.add(band);
+  const knot=part(new THREE.SphereGeometry(0.12,10,8), M.cloth, 0.6,2.3,0.15); g.add(knot);
+  // eyes (protruding, angry) + pupils + highlights
+  const eyes=[];
+  for(const ex of [-0.26,0.26]){
+    const e=part(new THREE.SphereGeometry(0.2,16,12), M.white, ex,2.02,0.5); g.add(e); eyes.push(e);
+    const p=part(new THREE.SphereGeometry(0.1,10,8), M.black, ex*0.9,2.0,0.66); g.add(p);
+    const hl=part(new THREE.SphereGeometry(0.035,6,6), M.white, ex*0.9-0.04,2.06,0.72); g.add(hl);
+    // angry brow
+    g.add(part(new THREE.BoxGeometry(0.34,0.09,0.1), M.brow, ex,2.28,0.5, 0,0, ex<0?0.5:-0.5));
+  }
+  // shouting mouth + teeth
+  const mouth=part(new THREE.SphereGeometry(0.26,14,10), M.mouth, 0,1.62,0.5); mouth.scale.set(1,0.8,0.5); g.add(mouth);
+  g.add(part(new THREE.BoxGeometry(0.36,0.07,0.04), M.white, 0,1.74,0.66));
+  g.add(part(new THREE.BoxGeometry(0.36,0.07,0.04), M.white, 0,1.5,0.66));
+  // arms (upper + hand)
   const arms=[];
-  for(const ax of [-1,1]){ const a=new THREE.Mesh(new THREE.CylinderGeometry(0.13,0.13,1.1,8),woodD); a.position.set(ax*0.72,1.7,0); a.rotation.z=ax*0.5; g.add(a); arms.push(a); }
-  // bat in right hand
-  const bat=new THREE.Mesh(new THREE.CylinderGeometry(0.1,0.16,1.3,8), new THREE.MeshLambertMaterial({color:0x7a4a22})); bat.position.set(1.15,1.2,0.1); bat.rotation.z=0.7; g.add(bat);
-  // legs
-  const legMat=woodD, legs=[];
-  for(const lx of [-0.28,0.28]){ const l=new THREE.Mesh(new THREE.CylinderGeometry(0.16,0.16,0.9,8),legMat); l.position.set(lx,0.3,0); g.add(l); legs.push(l); }
+  for(const s of [-1,1]){ const arm=new THREE.Group();
+    arm.add(part(new THREE.CapsuleGeometry(0.14,0.7,4,10), M.woodD, 0,-0.35,0));
+    arm.add(part(new THREE.SphereGeometry(0.19,12,10), M.woodD, 0,-0.78,0));   // hand
+    arm.position.set(s*0.66,1.9,0); arm.rotation.z=s*0.55; g.add(arm); arms.push(arm);
+  }
+  // baseball bat in right hand
+  const bat=new THREE.Group();
+  bat.add(part(new THREE.CylinderGeometry(0.08,0.17,1.4,12), M.bat, 0,0.55,0));
+  bat.add(part(new THREE.CylinderGeometry(0.09,0.09,0.28,12), M.woodD, 0,-0.12,0)); // grip
+  bat.position.set(1.02,1.15,0.15); bat.rotation.set(0.2,0,0.7); g.add(bat);
+  // legs (thigh capsule + foot) — grouped for run animation
+  const legs=[];
+  for(const s of [-1,1]){ const leg=new THREE.Group();
+    leg.add(part(new THREE.CapsuleGeometry(0.17,0.55,4,10), M.woodD, 0,-0.32,0));
+    leg.add(part(new THREE.BoxGeometry(0.26,0.16,0.5), M.woodD, 0,-0.62,0.12)); // foot
+    leg.position.set(s*0.3,0.72,0); g.add(leg); legs.push(leg);
+  }
   g.userData={legs,arms,body};
   return g;
 }
@@ -162,7 +206,7 @@ const overMat=new THREE.MeshLambertMaterial({color:0x4fd0ff});
 const coinGeo=new THREE.CylinderGeometry(0.42,0.42,0.12,16);
 const coinMat=new THREE.MeshLambertMaterial({color:0xffe14d,emissive:0x6b5410});
 let obstacles=[], coins=[];
-function clearWorld(){ for(const o of obstacles) scene.remove(o.mesh); for(const c of coins) scene.remove(c.mesh); obstacles=[]; coins=[]; }
+function clearWorld(){ for(const o of obstacles){ scene.remove(o.mesh); o.mesh.geometry.dispose(); } for(const c of coins) scene.remove(c.mesh); obstacles=[]; coins=[]; }
 
 // ---- obstacle spawning (fairness-guaranteed) ----
 let lastOpen=1, nextZ=0;
@@ -243,7 +287,7 @@ function gameOver(){ state=OVER; shake=1.2; sHit(); totalCoins+=coins$; localSto
   if(dist>best){best=Math.floor(dist);localStorage.setItem('br_best',best);}
   el('goDist').textContent=Math.floor(dist)+' m'; el('goCoins').textContent=coins$; el('goBest').textContent=best+' m';
   el('goQuip').textContent=QUIPS[(Math.random()*QUIPS.length)|0];
-  setTimeout(()=>{ el('hud').classList.add('hidden'); el('pauseBtn').style.display='none'; el('gameover').classList.remove('hidden'); el('mBest').textContent=best; el('mCoins').textContent=totalCoins; },700); }
+  setTimeout(()=>{ el('hud').classList.add('hidden'); el('pauseBtn').style.display='none'; el('gameover').classList.remove('hidden'); el('mBest').textContent=best; el('mCoins').textContent=totalCoins; },320); }
 
 // ============ update ============
 function update(dt){
@@ -281,7 +325,7 @@ function update(dt){
     }
   }
   // cull passed
-  obstacles=obstacles.filter(o=>{ if(o.z2< -14){scene.remove(o.mesh);return false;} return true; });
+  obstacles=obstacles.filter(o=>{ if(o.z2< -14){scene.remove(o.mesh); o.mesh.geometry.dispose(); return false;} return true; });
   coins=coins.filter(c=>{ if(c.got)return false; if(c.z< -8){scene.remove(c.mesh);return false;} return true; });
   // spawn ahead
   nextZ-=dz; if(nextZ<=0){ spawnRow(Z_SPAWN); nextZ=Math.max(11, 22-dist*0.004); }
@@ -306,10 +350,13 @@ function update(dt){
 
 // ============ loop ============
 let last=performance.now();
+function showErr(err){ const d=el('err'); const msg=(err&&err.message)||err&&err.toString()||'unknown'; if(d){ d.textContent='⚠️ '+msg; d.style.display='block'; } console.error(err); }
+addEventListener('error', e=>showErr(e.error||e.message));
+addEventListener('unhandledrejection', e=>showErr(e.reason));
 function animate(now){ let dt=(now-last)/1000; last=now; if(dt>0.05)dt=0.05;
-  if(state===PLAY&&!paused) update(dt);
-  // idle spin coins on menu
-  renderer.render(scene,camera); requestAnimationFrame(animate); }
+  try{ if(state===PLAY&&!paused) update(dt); renderer.render(scene,camera); }
+  catch(err){ showErr(err); }                 // never let one bad frame freeze the whole game
+  requestAnimationFrame(animate); }
 
 el('mBest').textContent=best; el('mCoins').textContent=totalCoins; el('verTag').textContent='BRAINROT RUSH 3D '+GAME_VERSION;
 el('loading').style.display='none'; el('menu').classList.remove('hidden');
