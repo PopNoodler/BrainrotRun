@@ -75,7 +75,7 @@
 
 <script>
 (function(){
-const GAME_VERSION='v1';
+const GAME_VERSION='v2';
 const cv=document.getElementById('game'), ctx=cv.getContext('2d');
 const el=id=>document.getElementById(id);
 let W=0,H=0,DPR=1;
@@ -107,6 +107,7 @@ const LANES=3, LANEW=1;                 // world lane offset (-1,0,1)
 let speed=0, dist=0, coins=0, gameT=0, shake=0;
 const player={ lane:1, laneX:1, jy:0, vy:0, rolling:0, run:0, dead:false };
 let obstacles=[], pickups=[], particles=[], floats=[];
+let lastOpen=1;   // fairness: the guaranteed-reachable open lane of the previous row (next row's open lane stays within 1 of it)
 let spawnZ=0;                           // next spawn scheduling by distance
 const Z_SPAWN=52, Z_CAM=7;              // spawn distance & camera constant
 const GRAV=95, JUMP_V=27;               // jump physics (world units)
@@ -119,7 +120,7 @@ function laneScreenX(laneX, s){ return W/2 + (laneX-1)*(Math.min(W*0.28,150))*s;
 // ---- reset / start ----
 function reset(){ speed=15; dist=0; coins=0; gameT=0; shake=0;
   player.lane=1; player.laneX=1; player.jy=0; player.vy=0; player.rolling=0; player.run=0; player.dead=false;
-  obstacles=[]; pickups=[]; particles=[]; floats=[]; spawnZ=Z_SPAWN; nextSpawn=14; }
+  obstacles=[]; pickups=[]; particles=[]; floats=[]; spawnZ=Z_SPAWN; nextSpawn=14; lastOpen=1; }
 let nextSpawn=14;
 function startGame(){ ac(); reset(); state=PLAY; paused=false;
   el('menu').classList.add('hidden'); el('gameover').classList.add('hidden'); el('hud').classList.remove('hidden'); el('pauseBtn').style.display='block'; }
@@ -158,14 +159,23 @@ function togglePause(){ if(state!==PLAY)return; paused=!paused; el('pauseBtn').t
 
 // ---- spawning ----
 const OB_TYPES=['jump','roll','block'];
+const randType=()=>OB_TYPES[Math.floor(Math.random()*OB_TYPES.length)];
 function spawnRow(){
   const r=Math.random();
-  if(r<0.62){ // 1-2 obstacles, leave at least one lane open
-    const n=Math.random()<0.4?2:1; const lanes=[0,1,2].sort(()=>Math.random()-0.5).slice(0,n);
-    for(const L of lanes){ const type=OB_TYPES[Math.floor(Math.random()*OB_TYPES.length)];
-      obstacles.push({lane:L,z:Z_SPAWN,type,hit:false}); }
-  } else { // coin run in one lane
-    const L=Math.floor(Math.random()*3); const cnt=4+Math.floor(Math.random()*4); const hi=Math.random()<0.35;
+  if(r<0.62){
+    if(Math.random()<0.4){ // block TWO lanes → the single open lane MUST be reachable from lastOpen (within 1)
+      const choices=[lastOpen-1,lastOpen,lastOpen+1].filter(l=>l>=0&&l<3);
+      const open=choices[Math.floor(Math.random()*choices.length)];
+      for(let L=0;L<3;L++) if(L!==open) obstacles.push({lane:L,z:Z_SPAWN,type:randType(),hit:false});
+      lastOpen=open;
+    } else { // block ONE lane → two lanes open (always at least one reachable); keep lastOpen reachable
+      const blk=Math.floor(Math.random()*3);
+      obstacles.push({lane:blk,z:Z_SPAWN,type:randType(),hit:false});
+      lastOpen = (blk!==lastOpen) ? lastOpen : [lastOpen-1,lastOpen+1].filter(l=>l>=0&&l<3)[0];
+    }
+  } else { // coin run — usually along the current safe lane so it rewards good positioning
+    const L=Math.random()<0.6?lastOpen:Math.floor(Math.random()*3);
+    const cnt=4+Math.floor(Math.random()*4); const hi=Math.random()<0.32;
     for(let i=0;i<cnt;i++) pickups.push({lane:L,z:Z_SPAWN+i*2.2,got:false,hi});
   }
 }
