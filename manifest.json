@@ -1,0 +1,10 @@
+{
+  "name": "Brainrot Rush",
+  "short_name": "Brainrot Rush",
+  "description": "Italian Brainrot endless runner starring Tung Tung Tung Sahur",
+  "start_url": "./index.html",
+  "display": "fullscreen",
+  "orientation": "portrait",
+  "background_color": "#0a0e1a",
+  "theme_color": "#0a0e1a"
+}
