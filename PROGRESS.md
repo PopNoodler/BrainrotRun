@@ -18,7 +18,9 @@ Single-file HTML5 canvas PWA at `C:\Users\adamt\BrainrotRun`. Built with the
 - Persistence: `br_best` (distance), `br_coins` (total). Network-first SW (no stale-page pain).
 
 ## Version log
-- **v1** — MVP: core runner, 3 obstacle types, coin runs, Tung Tung Tung Sahur procedural art, juice (particles/shake/sfx), menu+gameover, PWA. Deploy: not yet (needs a GitHub repo).
+- **v1** — 2.5D canvas MVP (superseded).
+- **v2** — fairness spawner.
+- **v3** — FULL 3D REBUILD (Three.js): real Subway-Surfers runner, jump on trains/trucks, Sahur 3D model, city scenery, coins, deployed to Pages.
 
 ## Backlog / ideas
 - More brainrot characters (Tralalero Tralala 🦈, Bombardiro Crocodilo 🐊✈️, Lirilì Larilà, Boneca Ambalabu) as unlockable playable skins.
