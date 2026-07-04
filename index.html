@@ -75,13 +75,13 @@
   <button class="btn" id="againBtn">RUN AGAIN ▶</button>
 </div>
 
-<div id="verTag">BRAINROT RUSH 3D v5</div>
+<div id="verTag">BRAINROT RUSH 3D v6</div>
 <div id="err" style="position:fixed;left:8px;right:8px;bottom:24px;z-index:30;display:none;background:rgba(120,10,20,.92);color:#fff;font:600 12px monospace;padding:8px 12px;border-radius:8px;white-space:pre-wrap"></div>
 
 <script type="module">
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-const GAME_VERSION='v5';
+const GAME_VERSION='v6';
 const el=id=>document.getElementById(id);
 
 // ============ renderer / scene / camera ============
@@ -235,7 +235,7 @@ function addObstacle(type,lane,z){
     mesh.position.set(laneOf(lane), (top+bot)/2, z); obstacles.push({mesh,type,lane,z,z2:z+len,top,bot,len}); scene.add(mesh); return; }
   scene.add(mesh); obstacles.push({mesh,type,lane,z,z2:z+len,top,bot:0,len});
 }
-function addCoin(lane,z,y){ const m=new THREE.Mesh(coinGeo,coinMat); m.rotation.x=Math.PI/2; m.position.set(laneOf(lane),y||1.1,z); scene.add(m); coins.push({mesh,lane,z,y:y||1.1,got:false}); }
+function addCoin(lane,z,y){ const m=new THREE.Mesh(coinGeo,coinMat); m.rotation.x=Math.PI/2; m.position.set(laneOf(lane),y||1.1,z); scene.add(m); coins.push({mesh:m,lane,z,y:y||1.1,got:false}); }
 function spawnRow(z){
   const r=Math.random();
   if(r<0.66){
