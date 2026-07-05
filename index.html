@@ -94,13 +94,13 @@
   <button class="btn" id="againBtn">RUN AGAIN ▶</button>
 </div>
 
-<div id="verTag">BRAINROT RUSH 3D v15</div>
+<div id="verTag">BRAINROT RUSH 3D v16</div>
 <div id="err" style="position:fixed;left:8px;right:8px;bottom:24px;z-index:30;display:none;background:rgba(120,10,20,.92);color:#fff;font:600 12px monospace;padding:8px 12px;border-radius:8px;white-space:pre-wrap"></div>
 
 <script type="module">
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-const GAME_VERSION='v15';
+const GAME_VERSION='v16';
 const el=id=>document.getElementById(id);
 
 // ============ renderer / scene / camera ============
@@ -146,6 +146,20 @@ const buildings=[];
 for(let i=0;i<24;i++){ const bh=8+Math.random()*22, side=i%2?1:-1;
   const b=new THREE.Mesh(new THREE.BoxGeometry(4+Math.random()*3,bh,4+Math.random()*4), bMats[i%bMats.length]);
   b.position.set(side*(11+Math.random()*8), bh/2-1, i*11); scene.add(b); buildings.push(b); }
+
+// ============ biomes (visual progression every ~600m) ============
+const BIOMES=[
+  {name:'Città',      bg:0x2a1c4a, fog:0x2a1c4a, ground:0x3a3352, build:[0x5a3fb0,0x8a5cff,0xe0326e,0x4fd0ff,0xff7a3d]},
+  {name:'Tramonto',   bg:0x3a1f38, fog:0x5a2f3a, ground:0x4a2f42, build:[0xff7a3d,0xffb020,0xe0326e,0xff5b6b,0x8a5cff]},
+  {name:'Notte Neon', bg:0x0a0e2a, fog:0x141438, ground:0x1a2340, build:[0x00e5ff,0xff2d95,0x9d4dff,0x00ff9d,0xffe14d]},
+  {name:'Foresta',    bg:0x14301f, fog:0x1a3a28, ground:0x2a4030, build:[0x46c24d,0x7ed957,0xffe14d,0x3a8f4d,0x8a5cff]},
+];
+let biomeIdx=-1; const _bg=new THREE.Color(0x2a1c4a), _fog=new THREE.Color(0x2a1c4a); const _tmpC=new THREE.Color();
+function setBiome(i,announce){ biomeIdx=i; const b=BIOMES[i]; _bg.setHex(b.bg); _fog.setHex(b.fog);
+  groundMat.color.setHex(b.ground); sideMat.color.copy(_tmpC.setHex(b.ground)).multiplyScalar(0.6);
+  b.build.forEach((c,k)=>{ if(bMats[k]) bMats[k].color.setHex(c); });
+  if(announce) popup(P.x,3.6,0,'🌆 '+b.name,'#ffffff'); }
+setBiome(0,false);
 
 // ============ 3D MODEL PIPELINE ============
 // Procedural character factory: PBR materials + generated textures + detailed geometry.
@@ -415,7 +429,7 @@ function togglePause(){ if(state!==PLAY)return; paused=!paused; el('pauseBtn').t
 // ============ start / over ============
 function reset(){ clearWorld(); speed=SPEED0; dist=0; coins$=0; tRun=0; shake=0; lastOpen=1; nextZ=40;
   pMag=0; pX2=0; pShield=false; pInv=0; coyoteT=0; jumpBufT=0; combo=0; comboT=0; roofT=0;
-  runSurf=0; runNear=0; runMaxMult=1; el('pups').textContent='';
+  runSurf=0; runNear=0; runMaxMult=1; biomeIdx=-1; el('pups').textContent='';
   P.lane=1; P.x=0; P.y=0; P.vy=0; P.roll=0; P.grounded=true;
   // buildings/dashes reset positions handled continuously
 }
@@ -500,6 +514,9 @@ function update(dt){
   powerups=powerups.filter(pu=>{ if(pu.got)return false; if(pu.z< -6){scene.remove(pu.grp);return false;} return true; });
   // spawn ahead
   nextZ-=dz; if(nextZ<=0){ spawnRow(Z_SPAWN); nextZ=Math.max(11, 22-dist*0.004); }
+  // biome progression (color shift every ~600m)
+  const bi=Math.floor(dist/600)%BIOMES.length; if(bi!==biomeIdx) setBiome(bi, biomeIdx>=0);
+  scene.background.lerp(_bg, Math.min(1,dt*2)); scene.fog.color.lerp(_fog, Math.min(1,dt*2));
   // recycle scenery
   for(const d of dashes){ d.position.z-=dz; if(d.position.z< -12) d.position.z+=234; }
   for(const b of buildings){ b.position.z-=dz; if(b.position.z< -14) b.position.z+=264; }
