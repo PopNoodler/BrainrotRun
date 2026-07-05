@@ -149,12 +149,12 @@
   <button class="btn2" id="quitBtn">🏠 QUIT TO MENU</button>
 </div>
 
-<div id="verTag">BRAINROT RUSH 3D v49</div>
+<div id="verTag">BRAINROT RUSH 3D v50</div>
 <div id="err" style="position:fixed;left:8px;right:8px;bottom:24px;z-index:30;display:none;background:rgba(120,10,20,.92);color:#fff;font:600 12px monospace;padding:8px 12px;border-radius:8px;white-space:pre-wrap"></div>
 
 <script type="module">
 import * as THREE from 'three';
-const GAME_VERSION='v49';
+const GAME_VERSION='v50';
 const el=id=>document.getElementById(id);
 
 // ============ renderer / scene / camera ============
@@ -663,6 +663,7 @@ el('dailyBtn').onclick=claimDaily;
 el('resumeBtn').onclick=togglePause;
 el('restartBtn').onclick=()=>{ el('pauseMenu').classList.add('hidden'); startGame(); };
 el('quitBtn').onclick=quitToMenu;
+document.addEventListener('visibilitychange',()=>{ if(document.hidden && state===PLAY && !paused) togglePause(); });   // auto-pause when backgrounded — no unfair deaths
 el('tutGo').onclick=()=>{ localStorage.setItem('br_tut','1'); el('tut').classList.add('hidden'); };
 el('muteBtn').textContent=['🔊','🔈','🔇'][soundMode];
 el('muteBtn').onclick=()=>{ soundMode=(soundMode+1)%3; localStorage.setItem('br_sound',soundMode); applySound(); };
