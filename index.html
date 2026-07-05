@@ -136,12 +136,12 @@
   <button class="btn" id="againBtn">RUN AGAIN ▶</button>
 </div>
 
-<div id="verTag">BRAINROT RUSH 3D v36</div>
+<div id="verTag">BRAINROT RUSH 3D v37</div>
 <div id="err" style="position:fixed;left:8px;right:8px;bottom:24px;z-index:30;display:none;background:rgba(120,10,20,.92);color:#fff;font:600 12px monospace;padding:8px 12px;border-radius:8px;white-space:pre-wrap"></div>
 
 <script type="module">
 import * as THREE from 'three';
-const GAME_VERSION='v36';
+const GAME_VERSION='v37';
 const el=id=>document.getElementById(id);
 
 // ============ renderer / scene / camera ============
@@ -179,6 +179,11 @@ for(const sx of [-1,1]){ const s=new THREE.Mesh(new THREE.BoxGeometry(10,1.2,400
 // rails (visual)
 const railMat=new THREE.MeshLambertMaterial({color:0x8a8496});
 for(let l=0;l<3;l++){ for(const off of [-0.7,0.7]){ const r=new THREE.Mesh(new THREE.BoxGeometry(0.14,0.14,400),railMat); r.position.set(laneOf(l)+off,0.07,120); scene.add(r); } }
+// railroad ties (cross-beams) — recycled for track definition + speed sense
+const tieMat=new THREE.MeshLambertMaterial({color:0x2a1e14});
+const tieGeo=new THREE.BoxGeometry(LANEX*3+1.2,0.14,0.5);
+const TIE_N=40, TIE_SP=3.4; const ties=[];
+for(let i=0;i<TIE_N;i++){ const t=new THREE.Mesh(tieGeo,tieMat); t.position.set(0,0.03,i*TIE_SP); scene.add(t); ties.push(t); }
 // moving dashes (speed sense) — recycled
 const dashMat=new THREE.MeshBasicMaterial({color:0xffe14d});
 const dashes=[];
@@ -728,6 +733,7 @@ function update(dt){
   scene.background.lerp(_bg, Math.min(1,dt*2)); scene.fog.color.lerp(_fog, Math.min(1,dt*2));
   // recycle scenery
   for(const d of dashes){ d.position.z-=dz; if(d.position.z< -12) d.position.z+=234; }
+  for(const t of ties){ t.position.z-=dz; if(t.position.z< -12) t.position.z+=TIE_N*TIE_SP; }
   for(const b of buildings){ b.position.z-=dz; if(b.position.z< -14) b.position.z+=264; }
   // player transform
   player.position.set(P.x, P.y, 0);
