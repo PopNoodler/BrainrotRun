@@ -101,6 +101,7 @@
     <div class="stat"><b id="mBest">0</b><span>best (m)</span></div>
     <div class="stat"><b id="mCoins">0</b><span>coins</span></div>
   </div>
+  <button class="btn2" id="dailyBtn" style="display:none;background:linear-gradient(180deg,#ffd24d,#ff9d3d);color:#0a0e1a;border:none">🎁 DAILY BONUS</button>
   <div id="missions"></div>
   <button class="btn" id="playBtn">RUN ▶</button>
   <button class="btn2" id="shopBtn">🛒 UPGRADES</button>
@@ -138,12 +139,12 @@
   <button class="btn" id="againBtn">RUN AGAIN ▶</button>
 </div>
 
-<div id="verTag">BRAINROT RUSH 3D v38</div>
+<div id="verTag">BRAINROT RUSH 3D v39</div>
 <div id="err" style="position:fixed;left:8px;right:8px;bottom:24px;z-index:30;display:none;background:rgba(120,10,20,.92);color:#fff;font:600 12px monospace;padding:8px 12px;border-radius:8px;white-space:pre-wrap"></div>
 
 <script type="module">
 import * as THREE from 'three';
-const GAME_VERSION='v38';
+const GAME_VERSION='v39';
 const el=id=>document.getElementById(id);
 
 // ============ renderer / scene / camera ============
@@ -384,6 +385,18 @@ function onPlay(){ const c=CHARACTERS[curChar];
   if(isOwned(c)){ localStorage.setItem('br_char',c.id); startGame(); }
   else if(totalCoins>=c.cost){ totalCoins-=c.cost; localStorage.setItem('br_coins',totalCoins); owned.push(c.id); localStorage.setItem('br_owned',JSON.stringify(owned)); localStorage.setItem('br_char',c.id); el('mCoins').textContent=totalCoins; refreshCharUI(); }
 }
+// ---- daily-login bonus (streak) ----
+const dayKey=d=>d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate();
+let dailyDate=localStorage.getItem('br_daily')||'', dailyStreak=+localStorage.getItem('br_streak')||0;
+function refreshDailyUI(){ const b=el('dailyBtn'); if(!b)return; b.style.display = (dayKey(new Date())!==dailyDate) ? 'block' : 'none'; }
+function claimDaily(){ const today=dayKey(new Date()); if(today===dailyDate) return;
+  const yStr=dayKey(new Date(Date.now()-864e5));
+  dailyStreak = (dailyDate===yStr) ? dailyStreak+1 : 1;
+  const reward = Math.min(300, 50+dailyStreak*25);   // day1 75 … caps at 300
+  totalCoins+=reward; dailyDate=today;
+  localStorage.setItem('br_coins',totalCoins); localStorage.setItem('br_daily',dailyDate); localStorage.setItem('br_streak',dailyStreak);
+  el('mCoins').textContent=totalCoins; const b=el('dailyBtn'); b.disabled=true; b.textContent='✓ +🪙'+reward+' · '+dailyStreak+'-day streak';
+  setTimeout(()=>{ b.style.display='none'; b.disabled=false; b.textContent='🎁 DAILY BONUS'; }, 1600); }
 loadCharacter(CHARACTERS[curChar]);
 // fake soft shadow
 const shadow=new THREE.Mesh(new THREE.CircleGeometry(0.9,20), new THREE.MeshBasicMaterial({color:0x000000,transparent:true,opacity:0.32}));
@@ -613,6 +626,7 @@ el('playBtn').onclick=onPlay; el('againBtn').onclick=startGame; el('pauseBtn').o
 el('prevChar').onclick=()=>cycleChar(-1); el('nextChar').onclick=()=>cycleChar(1);
 el('shopBtn').onclick=()=>{ renderShop(); el('menu').classList.add('hidden'); el('shop').classList.remove('hidden'); };
 el('shopBack').onclick=()=>{ el('shop').classList.add('hidden'); el('menu').classList.remove('hidden'); refreshCharUI(); };
+el('dailyBtn').onclick=claimDaily;
 el('tutGo').onclick=()=>{ localStorage.setItem('br_tut','1'); el('tut').classList.add('hidden'); };
 el('muteBtn').textContent=muted?'🔇':'🔊';
 el('muteBtn').onclick=()=>{ muted=!muted; localStorage.setItem('br_mute',muted?'1':'0'); el('muteBtn').textContent=muted?'🔇':'🔊';
@@ -783,7 +797,7 @@ function animate(now){ let dt=(now-last)/1000; last=now; if(dt>0.05)dt=0.05;
   } catch(err){ showErr(err); }                 // never let one bad frame freeze the whole game
   requestAnimationFrame(animate); }
 
-el('mBest').textContent=best; el('mCoins').textContent=totalCoins; el('verTag').textContent='BRAINROT RUSH 3D '+GAME_VERSION; renderMissions();
+el('mBest').textContent=best; el('mCoins').textContent=totalCoins; el('verTag').textContent='BRAINROT RUSH 3D '+GAME_VERSION; renderMissions(); refreshDailyUI();
 // (menu is revealed by revealMenu() once the model loads or falls back)
 requestAnimationFrame(animate);
 
