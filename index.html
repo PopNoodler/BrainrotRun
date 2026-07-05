@@ -132,15 +132,16 @@
     <div class="goRow"><span>Best</span><b id="goBest">0 m</b></div>
   </div>
   <div id="goQuip" style="font-size:14px;color:#9fe6ff;font-weight:800;min-height:20px;margin-bottom:4px"></div>
+  <button class="btn" id="continueBtn" style="background:linear-gradient(180deg,#8ef07e,#3ac24d);box-shadow:0 8px 0 #1f7a30,0 14px 26px rgba(60,200,80,.4);display:none">CONTINUE 🪙150</button>
   <button class="btn" id="againBtn">RUN AGAIN ▶</button>
 </div>
 
-<div id="verTag">BRAINROT RUSH 3D v34</div>
+<div id="verTag">BRAINROT RUSH 3D v35</div>
 <div id="err" style="position:fixed;left:8px;right:8px;bottom:24px;z-index:30;display:none;background:rgba(120,10,20,.92);color:#fff;font:600 12px monospace;padding:8px 12px;border-radius:8px;white-space:pre-wrap"></div>
 
 <script type="module">
 import * as THREE from 'three';
-const GAME_VERSION='v34';
+const GAME_VERSION='v35';
 const el=id=>document.getElementById(id);
 
 // ============ renderer / scene / camera ============
@@ -483,6 +484,7 @@ function pickType(){ const d=diffOf(), r=Math.random();   // early: roof-friendl
 // ============ game state ============
 const MENU=0,PLAY=1,OVER=2,DYING=3; let state=MENU, paused=false;
 let deathT=0, deathVy=0, deathSpin=0;   // crash tumble animation
+let continues=0, bankedThisRun=0, missionsTicked=false; const REVIVE_COST=150;   // one paid revive per run; delta-bank keeps coin accounting exact
 let speed=SPEED0, dist=0, coins$=0, tRun=0, shake=0, lastMile=0, coinPulse=0;
 const FOV0=62, FOVMAX=72;   // camera FOV widens with speed for a stronger sense of motion
 let pMag=0, pX2=0, pShield=false, pInv=0, pHover=0;   // magnet timer, 2x timer, shield flag, post-shield invuln, hoverboard timer
@@ -597,7 +599,7 @@ renderer.domElement.addEventListener('touchend',e=>{const t=e.changedTouches[0],
   if(state===MENU){ if(!menuBlocked())startGame(); return; } if(state===OVER)return;
   if(Math.abs(dx)<24&&Math.abs(dy)<24){jump();return;}
   if(Math.abs(dx)>Math.abs(dy))move(dx>0?1:-1); else dy<0?jump():roll(); },{passive:true});
-el('playBtn').onclick=onPlay; el('againBtn').onclick=startGame; el('pauseBtn').onclick=togglePause;
+el('playBtn').onclick=onPlay; el('againBtn').onclick=startGame; el('pauseBtn').onclick=togglePause; el('continueBtn').onclick=doContinue;
 el('prevChar').onclick=()=>cycleChar(-1); el('nextChar').onclick=()=>cycleChar(1);
 el('shopBtn').onclick=()=>{ renderShop(); el('menu').classList.add('hidden'); el('shop').classList.remove('hidden'); };
 el('shopBack').onclick=()=>{ el('shop').classList.add('hidden'); el('menu').classList.remove('hidden'); refreshCharUI(); };
@@ -613,6 +615,7 @@ function reset(){ clearWorld(); speed=SPEED0; dist=0; coins$=0; tRun=0; shake=0;
   runSurf=0; runNear=0; runMaxMult=1; biomeIdx=-1; coinPulse=0;
   camera.fov=FOV0; camera.updateProjectionMatrix(); el('pups').textContent='';
   P.lane=1; P.x=0; P.y=0; P.vy=0; P.roll=0; P.grounded=true; sq=0; pitch=0;
+  continues=0; bankedThisRun=0; missionsTicked=false;
   // buildings/dashes reset positions handled continuously
 }
 function startGame(){ ac(); reset(); state=PLAY; paused=false;
@@ -629,14 +632,24 @@ function deathTick(dt){ deathT+=dt; deathVy-=55*dt; P.y+=deathVy*dt;
   camera.position.y = camBase.y + (shake>0?(Math.random()-0.5)*shake:0);
   if(shake>0) shake=Math.max(0,shake-dt*2.2);
   if(deathT>=0.65) finishGameOver(); }
-function finishGameOver(){ state=OVER; totalCoins+=coins$; localStorage.setItem('br_coins',totalCoins);
+function finishGameOver(){ state=OVER;
+  const gain=Math.max(0, coins$-bankedThisRun); totalCoins+=gain; bankedThisRun=coins$; localStorage.setItem('br_coins',totalCoins);  // bank only newly-collected coins (survives revives)
   const isBest = Math.floor(dist)>best && dist>10;
   if(isBest){ best=Math.floor(dist); localStorage.setItem('br_best',best); }
-  const mGain=tickMissions({dist:Math.floor(dist), coins:coins$, surf:runSurf, near:runNear, runs:1, maxMult:runMaxMult}); renderMissions();
+  let mGain=0; if(!missionsTicked){ mGain=tickMissions({dist:Math.floor(dist), coins:coins$, surf:runSurf, near:runNear, runs:1, maxMult:runMaxMult}); missionsTicked=true; renderMissions(); }  // tick once per run
   el('goTitle').textContent = isBest ? '🏆 NEW BEST!' : 'TUNG DOWN!'; el('goTitle').style.color = isBest ? '#ffe14d' : '#ff5b6b';
   el('goDist').textContent=Math.floor(dist)+' m'; el('goCoins').textContent=coins$; el('goBest').textContent=best+' m';
   el('goQuip').textContent = mGain?('🎯 Mission complete! +🪙'+mGain) : isBest?('🏆 New record — '+best+'m!') : QUIPS[(Math.random()*QUIPS.length)|0];
+  const canRevive = continues<1 && totalCoins>=REVIVE_COST;
+  el('continueBtn').style.display = canRevive?'block':'none'; el('continueBtn').textContent='CONTINUE 🪙'+REVIVE_COST;
   el('hud').classList.add('hidden'); el('pauseBtn').style.display='none'; el('gameover').classList.remove('hidden'); el('mBest').textContent=best; el('mCoins').textContent=totalCoins; }
+function doContinue(){ if(continues>=1 || totalCoins<REVIVE_COST) return; totalCoins-=REVIVE_COST; localStorage.setItem('br_coins',totalCoins); continues++;
+  for(const o of obstacles){ scene.remove(o.mesh); o.mesh.geometry.dispose(); } obstacles=[];   // clear the field so you don't instantly re-crash
+  P.y=0; P.vy=0; P.lane=1; P.x=0; P.roll=0; P.grounded=true; sq=0; pitch=0; deathT=0; shake=0; pInv=2.6; pShield=false; nextZ=Math.max(nextZ,18);
+  if(player){ player.rotation.set(0, player.userData.baseRotY||0, 0); player.position.set(0,0,0); player.scale.set(1,1,1); }
+  camera.position.set(0, camBase.y, camBase.z);
+  el('gameover').classList.add('hidden'); el('hud').classList.remove('hidden'); el('pauseBtn').style.display='block';
+  state=PLAY; paused=false; startMusic(); burst(0,1.6,0,22,0x8ef07e,8,1.0); }
 
 // ============ update ============
 function update(dt){
