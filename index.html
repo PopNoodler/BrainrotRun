@@ -139,12 +139,12 @@
   <button class="btn" id="againBtn">RUN AGAIN ▶</button>
 </div>
 
-<div id="verTag">BRAINROT RUSH 3D v45</div>
+<div id="verTag">BRAINROT RUSH 3D v46</div>
 <div id="err" style="position:fixed;left:8px;right:8px;bottom:24px;z-index:30;display:none;background:rgba(120,10,20,.92);color:#fff;font:600 12px monospace;padding:8px 12px;border-radius:8px;white-space:pre-wrap"></div>
 
 <script type="module">
 import * as THREE from 'three';
-const GAME_VERSION='v45';
+const GAME_VERSION='v46';
 const el=id=>document.getElementById(id);
 
 // ============ renderer / scene / camera ============
@@ -444,8 +444,14 @@ function truckTexture(hex){ const c=document.createElement('canvas'); c.width=25
   g.fillStyle='rgba(0,0,0,0.3)'; g.fillRect(0,28,256,8);                                       // container latch rail
   return new THREE.CanvasTexture(c); }
 const truckMats=[0xe08a2a,0x2aa0a0,0xbf3b6b,0x5a8f3a,0x6a5acf].map(c=>new THREE.MeshLambertMaterial({map:truckTexture(c)}));
-const barrierMat=new THREE.MeshLambertMaterial({color:0xff5b6b});
-const overMat=new THREE.MeshLambertMaterial({color:0x4fd0ff});
+function arrowTex(bg, up){ const c=document.createElement('canvas'); c.width=128; c.height=128; const g=c.getContext('2d');
+  g.fillStyle=bg; g.fillRect(0,0,128,128); g.strokeStyle='rgba(255,255,255,0.92)'; g.lineWidth=14; g.lineCap='round'; g.lineJoin='round';
+  for(let i=0;i<2;i++){ const yo=i*40; g.beginPath();
+    if(up){ g.moveTo(32,88-yo); g.lineTo(64,52-yo); g.lineTo(96,88-yo); } else { g.moveTo(32,40+yo); g.lineTo(64,76+yo); g.lineTo(96,40+yo); }
+    g.stroke(); }
+  return new THREE.CanvasTexture(c); }
+const barrierMat=new THREE.MeshLambertMaterial({map:arrowTex('#ff5b6b',true)});    // low barrier → ↑ JUMP over it
+const overMat=new THREE.MeshLambertMaterial({map:arrowTex('#4fd0ff',false)});      // overhead bar → ↓ ROLL under it
 const coinGeo=new THREE.CylinderGeometry(0.42,0.42,0.12,16);
 const coinMat=new THREE.MeshLambertMaterial({color:0xffe14d,emissive:0x6b5410});
 const COIN_Y=new THREE.Vector3(0,1,0);   // world up — coins flash by spinning around it
