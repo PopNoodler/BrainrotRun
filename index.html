@@ -75,13 +75,13 @@
   <button class="btn" id="againBtn">RUN AGAIN ▶</button>
 </div>
 
-<div id="verTag">BRAINROT RUSH 3D v6</div>
+<div id="verTag">BRAINROT RUSH 3D v7</div>
 <div id="err" style="position:fixed;left:8px;right:8px;bottom:24px;z-index:30;display:none;background:rgba(120,10,20,.92);color:#fff;font:600 12px monospace;padding:8px 12px;border-radius:8px;white-space:pre-wrap"></div>
 
 <script type="module">
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-const GAME_VERSION='v6';
+const GAME_VERSION='v7';
 const el=id=>document.getElementById(id);
 
 // ============ renderer / scene / camera ============
@@ -201,12 +201,12 @@ function revealMenu(){ el('loading').style.display='none'; el('menu').classList.
 function useModel(g, legs, rotY){ player=g; player.rotation.y=rotY||0; scene.add(player); player.userData={legs}; revealMenu(); }
 function fallbackModel(){ const g=buildSahur(); useModel(g, g.userData.legs, 0); }
 new GLTFLoader().load('assets/sahur.glb',
-  gltf=>{ const g=gltf.scene; const L=[g.getObjectByName('LegL'), g.getObjectByName('LegR')];
-    if(!L[0]||!L[1]){ fallbackModel(); return; }
-    useModel(g, L, Math.PI);   // Blender face was +Y → -Z after Y-up convert; flip to face +Z (away from cam)
-  },
+  gltf=>{ try{ const g=gltf.scene; const L=[g.getObjectByName('LegL'), g.getObjectByName('LegR')];
+    if(!L[0]||!L[1]){ showErr('GLB ok but legs missing; nodes: '+[].concat(...g.children.map(c=>c.name)).join(',')); fallbackModel(); return; }
+    useModel(g, L, Math.PI);   // Blender face +Y → glTF -Z after Y-up; flip to face +Z (away from cam)
+  }catch(e){ showErr('GLB setup error: '+e.message); fallbackModel(); } },
   undefined,
-  err=>{ showErr('model load failed → procedural fallback'); fallbackModel(); }
+  err=>{ showErr('GLB failed to load'+(location.protocol==='file:'?' — you are on file://, the model can only load from the live URL / a server. Use https://popnoodler.github.io/BrainrotRun/':' ('+((err&&(err.message||err.type))||'?')+')')); fallbackModel(); }
 );
 // fake soft shadow
 const shadow=new THREE.Mesh(new THREE.CircleGeometry(0.9,20), new THREE.MeshBasicMaterial({color:0x000000,transparent:true,opacity:0.32}));
