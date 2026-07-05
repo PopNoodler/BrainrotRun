@@ -133,13 +133,12 @@
   <button class="btn" id="againBtn">RUN AGAIN ▶</button>
 </div>
 
-<div id="verTag">BRAINROT RUSH 3D v25</div>
+<div id="verTag">BRAINROT RUSH 3D v26</div>
 <div id="err" style="position:fixed;left:8px;right:8px;bottom:24px;z-index:30;display:none;background:rgba(120,10,20,.92);color:#fff;font:600 12px monospace;padding:8px 12px;border-radius:8px;white-space:pre-wrap"></div>
 
 <script type="module">
 import * as THREE from 'three';
-import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-const GAME_VERSION='v25';
+const GAME_VERSION='v26';
 const el=id=>document.getElementById(id);
 
 // ============ renderer / scene / camera ============
@@ -269,38 +268,108 @@ function buildSahur(){
   g.userData={legs,arms,body};
   return g;
 }
-// ---- load the Blender-authored GLB (procedural fallback if it fails) ----
-// ---- character roster (Blender-authored GLBs, procedural fallback) ----
+// ---- procedural character factory (each brainrot character built from primitives — synchronous, no network) ----
+function pmat(hex,rough,metal){ return new THREE.MeshStandardMaterial({color:hex,roughness:rough==null?0.7:rough,metalness:metal||0}); }
+const CM={ blue:pmat(0x3f7fbf,0.5), belly:pmat(0xe0e7ec,0.5), tooth:pmat(0xf5f5ef,0.3), mouthD:pmat(0x3a0c10,0.55),
+  sneaker:pmat(0x2f6df0,0.5), sole:pmat(0xf2f2f2,0.5),
+  croc:pmat(0x4c7a3a,0.6), crocD:pmat(0x33582a,0.65), crocBelly:pmat(0xd8d2a8,0.55), metal:pmat(0x8a9099,0.35,0.85), boot:pmat(0x191921,0.5),
+  cactus:pmat(0x4e9a44,0.65), cactusD:pmat(0x33702c,0.7), spine:pmat(0xe6e090,0.5), ele:pmat(0x5aa050,0.6), tusk:pmat(0xf2eede,0.35), skin:pmat(0xd19a70,0.65),
+  tire:pmat(0x141418,0.75), tread:pmat(0x08080a,0.8), hub:pmat(0x9195a0,0.35,0.8), frog:pmat(0x5aa03a,0.6), frogBelly:pmat(0xd0d488,0.55), shoe:pmat(0x24222c,0.5) };
+function legPair(g, legMat, footMat, hipX, hipY, footZ){ const legs=[];
+  for(const s of [-1,1]){ const leg=new THREE.Group();
+    leg.add(part(new THREE.CapsuleGeometry(0.17,0.55,4,10), legMat, 0,-0.32,0));
+    leg.add(part(new THREE.BoxGeometry(0.3,0.17,0.55), footMat, 0,-0.64,footZ==null?0.14:footZ));
+    leg.position.set(s*hipX, hipY==null?0.72:hipY, 0); g.add(leg); legs.push(leg); }
+  return legs; }
+function eyePair(g, mat, ex, ey, ez, r){ for(const s of [-1,1]){ g.add(part(new THREE.SphereGeometry(r||0.15,14,10), M.white, s*ex,ey,ez));
+  g.add(part(new THREE.SphereGeometry((r||0.15)*0.5,10,8), M.black, s*ex,ey+0.02,ez+0.09)); } }
+
+// -- Tralalero Tralala: blue shark on sneakers --
+function buildTralalero(){ const g=new THREE.Group();
+  const body=part(new THREE.SphereGeometry(0.72,22,16), CM.blue, 0,1.75,0); body.scale.set(0.9,1.2,1.55); g.add(body);
+  const belly=part(new THREE.SphereGeometry(0.6,18,12), CM.belly, 0,1.55,0.32); belly.scale.set(0.82,1.0,1.15); g.add(belly);
+  const snout=part(new THREE.ConeGeometry(0.5,0.95,16), CM.blue, 0,1.8,1.05); snout.rotation.x=Math.PI/2; g.add(snout);
+  const mouth=part(new THREE.SphereGeometry(0.44,16,12), CM.mouthD, 0,1.5,0.92); mouth.scale.set(0.95,0.6,0.6); g.add(mouth);
+  for(let i=0;i<6;i++){ const tx=-0.3+i*0.12; g.add(part(new THREE.ConeGeometry(0.05,0.16,6), CM.tooth, tx,1.62,1.14));
+    const tb=part(new THREE.ConeGeometry(0.05,0.14,6), CM.tooth, tx,1.4,1.12); tb.rotation.x=Math.PI; g.add(tb); }
+  eyePair(g, null, 0.34, 1.98, 0.6, 0.15);
+  const dorsal=part(new THREE.ConeGeometry(0.42,0.95,4), CM.blue, 0,2.55,-0.05); dorsal.scale.set(0.32,1,1); dorsal.rotation.z=0.18; g.add(dorsal);
+  const tail=part(new THREE.ConeGeometry(0.5,0.95,4), CM.blue, 0,1.95,-1.2); tail.scale.set(0.32,1,1); tail.rotation.x=Math.PI/2; g.add(tail);
+  for(const s of [-1,1]){ const f=part(new THREE.ConeGeometry(0.36,0.85,4), CM.blue, s*0.72,1.5,0.2); f.scale.set(0.26,1,0.8); f.rotation.set(Math.PI/2,0,s*0.5); g.add(f); }
+  g.userData={legs:legPair(g, CM.blue, CM.sneaker, 0.32, 0.72, 0.18)}; return g;
+}
+// -- Bombardiro Crocodilo: green croc-headed bomber --
+function buildBombardiro(){ const g=new THREE.Group();
+  const body=part(new THREE.CapsuleGeometry(0.55,1.15,6,16), CM.croc, 0,1.75,0); body.scale.set(0.85,1,1.1); g.add(body);
+  const belly=part(new THREE.SphereGeometry(0.42,14,10), CM.crocBelly, 0,1.6,0.42); belly.scale.set(0.72,1.1,0.42); g.add(belly);
+  for(let i=0;i<4;i++){ const sc=part(new THREE.ConeGeometry(0.13,0.24,4), CM.crocD, 0,1.15+i*0.4,-0.52); sc.scale.set(0.5,1,1); g.add(sc); }
+  for(const s of [-1,1]){ g.add(part(new THREE.BoxGeometry(1.6,0.14,0.62), CM.metal, s*0.98,1.75,-0.05));
+    g.add(part(new THREE.SphereGeometry(0.16,10,8), CM.boot, s*0.9,1.5,-0.05)); }
+  g.add(part(new THREE.BoxGeometry(0.1,0.72,0.5), CM.metal, 0,2.32,-0.55));
+  const head=part(new THREE.SphereGeometry(0.5,20,14), CM.croc, 0,2.72,0.08); head.scale.set(0.85,0.9,0.95); g.add(head);
+  g.add(part(new THREE.BoxGeometry(0.72,0.32,1.0), CM.croc, 0,2.64,0.82));
+  g.add(part(new THREE.BoxGeometry(0.64,0.2,0.9), CM.croc, 0,2.42,0.8));
+  for(let i=0;i<7;i++){ const tx=-0.28+i*0.093; g.add(part(new THREE.ConeGeometry(0.04,0.12,6), CM.tooth, tx,2.5,0.55)); }
+  for(const s of [-1,1]){ g.add(part(new THREE.SphereGeometry(0.16,14,10), CM.croc, s*0.28,3.02,0.08)); }
+  eyePair(g, null, 0.28, 3.06, 0.16, 0.11);
+  for(const s of [-1,1]){ const gg=part(new THREE.BoxGeometry(0.26,0.14,0.1), CM.goggle||CM.crocD, s*0.28,2.96,0.24); g.add(gg); }
+  g.userData={legs:legPair(g, CM.croc, CM.boot, 0.3, 0.78, 0.16)}; return g;
+}
+// -- Lirilì Larilà: cactus-elephant in sandals --
+function buildLirili(){ const g=new THREE.Group();
+  const body=part(new THREE.CapsuleGeometry(0.6,1.35,6,18), CM.cactus, 0,1.7,0); g.add(body);
+  for(let i=0;i<6;i++){ const a=i*Math.PI/3; g.add(part(new THREE.CylinderGeometry(0.045,0.045,1.7,6), CM.cactusD, Math.cos(a)*0.58,1.6,Math.sin(a)*0.58)); }
+  for(let i=0;i<10;i++){ const a=(i*2.399); const h=1.0+((i*0.14)%1.4); const sp=part(new THREE.ConeGeometry(0.04,0.16,5), CM.spine, Math.cos(a)*0.62,h,Math.sin(a)*0.62); sp.rotation.z=Math.PI/2; sp.rotation.y=-a; g.add(sp); }
+  for(const s of [-1,1]){ g.add(part(new THREE.CapsuleGeometry(0.15,0.5,4,8), CM.cactus, s*0.72,1.75,0));
+    g.add(part(new THREE.CapsuleGeometry(0.13,0.4,4,8), CM.cactus, s*0.92,2.15,0)); }
+  const head=part(new THREE.SphereGeometry(0.56,20,14), CM.ele, 0,2.85,0.05); head.scale.set(1,0.92,0.95); g.add(head);
+  for(const s of [-1,1]){ const ear=part(new THREE.SphereGeometry(0.42,14,10), CM.ele, s*0.62,2.85,-0.05); ear.scale.set(0.18,1,1); g.add(ear); }
+  for(let i=0;i<5;i++){ g.add(part(new THREE.SphereGeometry(0.25-i*0.032,12,8), CM.ele, 0,2.78-i*0.24,0.5+i*0.11)); }
+  for(const s of [-1,1]){ const tu=part(new THREE.ConeGeometry(0.08,0.45,10), CM.tusk, s*0.22,2.5,0.5); tu.rotation.x=1.15; g.add(tu); }
+  eyePair(g, null, 0.3, 3.0, 0.42, 0.12);
+  g.userData={legs:legPair(g, CM.cactus, CM.skin, 0.3, 0.78, 0.14)}; return g;
+}
+// -- Boneca Ambalabu: frog head on a tire, human legs --
+function buildBoneca(){ const g=new THREE.Group();
+  const tire=part(new THREE.TorusGeometry(0.62,0.32,14,24), CM.tire, 0,1.5,0); g.add(tire);
+  for(let i=0;i<12;i++){ const a=i*Math.PI/6; g.add(part(new THREE.BoxGeometry(0.14,0.14,0.46), CM.tread, Math.cos(a)*0.94,1.5+Math.sin(a)*0.94,0)); }
+  const hub=part(new THREE.CylinderGeometry(0.28,0.28,0.66,18), CM.hub, 0,1.5,0); hub.rotation.x=Math.PI/2; g.add(hub);
+  const head=part(new THREE.SphereGeometry(0.48,20,14), CM.frog, 0,2.4,0.05); head.scale.set(1.05,0.95,0.9); g.add(head);
+  const chin=part(new THREE.SphereGeometry(0.36,14,10), CM.frogBelly, 0,2.25,0.3); chin.scale.set(1,0.68,0.7); g.add(chin);
+  for(const s of [-1,1]){ g.add(part(new THREE.SphereGeometry(0.24,14,10), CM.frog, s*0.28,2.75,0));
+    g.add(part(new THREE.SphereGeometry(0.18,14,10), M.white, s*0.28,2.8,0.08));
+    g.add(part(new THREE.SphereGeometry(0.09,10,8), M.black, s*0.28,2.85,0.16)); }
+  const mouth=part(new THREE.SphereGeometry(0.3,14,10), CM.mouthD, 0,2.28,0.34); mouth.scale.set(1,0.32,0.4); g.add(mouth);
+  for(const s of [-1,1]){ const arm=part(new THREE.CapsuleGeometry(0.1,0.5,4,8), CM.frog, s*0.6,1.72,0.1); arm.rotation.z=s*0.5; g.add(arm); }
+  const legs=[]; for(const s of [-1,1]){ const leg=new THREE.Group();
+    leg.add(part(new THREE.CapsuleGeometry(0.15,0.7,4,10), CM.skin, 0,-0.35,0));
+    leg.add(part(new THREE.BoxGeometry(0.28,0.18,0.55), CM.shoe, 0,-0.72,0.14));
+    leg.position.set(s*0.26,0.78,0); g.add(leg); legs.push(leg); }
+  g.userData={legs}; return g;
+}
+// ---- character roster (procedural builders — always distinct, never a broken load) ----
 const CHARACTERS=[
-  {id:'sahur',      name:'Tung Tung Tung Sahur',   glb:'assets/sahur.glb',      cost:0},
-  {id:'tralalero',  name:'Tralalero Tralala 🦈',   glb:'assets/tralalero.glb',  cost:1500},
-  {id:'bombardiro', name:'Bombardiro Crocodilo 🐊✈️', glb:'assets/bombardiro.glb', cost:3000},
-  {id:'lirili',     name:'Lirilì Larilà 🌵🐘',      glb:'assets/lirili.glb',     cost:5000},
-  {id:'boneca',     name:'Boneca Ambalabu 🐸🛞',    glb:'assets/boneca.glb',     cost:8000},
+  {id:'sahur',      name:'Tung Tung Tung Sahur',   cost:0,    build:buildSahur},
+  {id:'tralalero',  name:'Tralalero Tralala 🦈',   cost:1500, build:buildTralalero},
+  {id:'bombardiro', name:'Bombardiro Crocodilo 🐊✈️', cost:3000, build:buildBombardiro},
+  {id:'lirili',     name:'Lirilì Larilà 🌵🐘',      cost:5000, build:buildLirili},
+  {id:'boneca',     name:'Boneca Ambalabu 🐸🛞',    cost:8000, build:buildBoneca},
 ];
 let owned; try{ owned=JSON.parse(localStorage.getItem('br_owned')||'["sahur"]')||['sahur']; }catch(e){ owned=['sahur']; }
 const isOwned=c=>c.id==='sahur'||owned.includes(c.id);
 let curChar=Math.max(0, CHARACTERS.findIndex(c=>c.id===(localStorage.getItem('br_char')||'sahur')));
-let player, modelLoading=false, menuReady=false;
+let player, menuReady=false;
 function revealMenu(){ el('loading').style.display='none'; el('menu').classList.remove('hidden'); menuReady=true; refreshCharUI();
   if(!localStorage.getItem('br_tut')) el('tut').classList.remove('hidden'); }   // one-time onboarding
-function useModel(g, legs, rotY){ if(player) scene.remove(player); player=g; g.userData={legs, baseRotY:rotY||0}; g.rotation.set(0,rotY||0,0); g.position.set(0,0,0); scene.add(g); modelLoading=false; if(!menuReady) revealMenu(); }
-function loadCharacter(c){ modelLoading=true;
-  new GLTFLoader().load(c.glb,
-    gltf=>{ try{ const g=gltf.scene; const L=[g.getObjectByName('LegL'),g.getObjectByName('LegR')];
-      if(!L[0]||!L[1]){ showErr('legs missing: '+c.id); const fb=buildSahur(); useModel(fb,fb.userData.legs,0); return; }
-      useModel(g, L, Math.PI);   // Blender face +Y → glTF -Z after Y-up; flip to face +Z
-    }catch(e){ showErr('model err: '+e.message); const fb=buildSahur(); useModel(fb,fb.userData.legs,0); } },
-    undefined,
-    err=>{ showErr('load fail '+c.id+(location.protocol==='file:'?' — file:// blocks the model; use the live URL':'')); const fb=buildSahur(); useModel(fb,fb.userData.legs,0); }
-  );
-}
+function useModel(g, legs, rotY){ if(player){ scene.remove(player); player.traverse(o=>{ if(o.geometry) o.geometry.dispose(); }); }
+  player=g; g.userData={legs, baseRotY:rotY||0}; g.rotation.set(0,rotY||0,0); g.position.set(0,0,0); scene.add(g); if(!menuReady) revealMenu(); }
+function loadCharacter(c){ const g=c.build(); useModel(g, g.userData.legs, 0); }   // synchronous build — no async, no fallback, always correct
 function refreshCharUI(){ const c=CHARACTERS[curChar]; el('charName').textContent=c.name;
   if(isOwned(c)){ el('charStatus').textContent='✓ owned'; el('playBtn').textContent='RUN ▶'; }
   else if(totalCoins>=c.cost){ el('charStatus').textContent='🪙 '+c.cost+' — tap to unlock'; el('playBtn').textContent='UNLOCK 🪙'+c.cost; }
   else { el('charStatus').textContent='🔒 🪙'+c.cost+' (need '+(c.cost-totalCoins)+' more)'; el('playBtn').textContent='🔒 🪙'+c.cost; }
 }
-function cycleChar(d){ if(modelLoading)return; curChar=(curChar+d+CHARACTERS.length)%CHARACTERS.length; loadCharacter(CHARACTERS[curChar]); refreshCharUI(); }
+function cycleChar(d){ curChar=(curChar+d+CHARACTERS.length)%CHARACTERS.length; loadCharacter(CHARACTERS[curChar]); refreshCharUI(); }
 function onPlay(){ const c=CHARACTERS[curChar];
   if(isOwned(c)){ localStorage.setItem('br_char',c.id); startGame(); }
   else if(totalCoins>=c.cost){ totalCoins-=c.cost; localStorage.setItem('br_coins',totalCoins); owned.push(c.id); localStorage.setItem('br_owned',JSON.stringify(owned)); localStorage.setItem('br_char',c.id); el('mCoins').textContent=totalCoins; refreshCharUI(); }
