@@ -21,6 +21,7 @@ Single-file HTML5 canvas PWA at `C:\Users\adamt\BrainrotRun`. Built with the
 - **v1** — 2.5D canvas MVP (superseded).
 - **v2** — fairness spawner.
 - **v3** — FULL 3D REBUILD (Three.js): real Subway-Surfers runner, jump on trains/trucks, Sahur 3D model, city scenery, coins, deployed to Pages.
+- **v4** freeze fix + PBR/texture model pipeline. **v5** Blender headless GLB pipeline (models/*.py→assets/*.glb, GLTFLoader). **v6** fix mesh-not-defined coin freeze. **v7** model-load diagnostics. **v8** power-ups (magnet/shield/2x).
 
 ## Backlog / ideas
 - More brainrot characters (Tralalero Tralala 🦈, Bombardiro Crocodilo 🐊✈️, Lirilì Larilà, Boneca Ambalabu) as unlockable playable skins.
