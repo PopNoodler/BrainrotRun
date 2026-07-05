@@ -139,12 +139,12 @@
   <button class="btn" id="againBtn">RUN AGAIN ▶</button>
 </div>
 
-<div id="verTag">BRAINROT RUSH 3D v44</div>
+<div id="verTag">BRAINROT RUSH 3D v45</div>
 <div id="err" style="position:fixed;left:8px;right:8px;bottom:24px;z-index:30;display:none;background:rgba(120,10,20,.92);color:#fff;font:600 12px monospace;padding:8px 12px;border-radius:8px;white-space:pre-wrap"></div>
 
 <script type="module">
 import * as THREE from 'three';
-const GAME_VERSION='v44';
+const GAME_VERSION='v45';
 const el=id=>document.getElementById(id);
 
 // ============ renderer / scene / camera ============
@@ -477,12 +477,15 @@ function poolCoin(c){ scene.remove(c.mesh); c.mesh.visible=true; (c.gem?gemPool:
 let powerups=[];
 const PU_COL={magnet:0xff4d6d, shield:0x4fd0ff, x2:0xffe14d, hover:0x7ef07e}, PU_ICON={magnet:'🧲', shield:'🛡️', x2:'✖️', hover:'🛹'};
 const orbGeo=new THREE.IcosahedronGeometry(0.5,1);
-function iconSprite(emoji){ const c=document.createElement('canvas'); c.width=c.height=128; const g=c.getContext('2d');
-  g.font='96px serif'; g.textAlign='center'; g.textBaseline='middle'; g.fillText(emoji,64,74);
-  const s=new THREE.Sprite(new THREE.SpriteMaterial({map:new THREE.CanvasTexture(c),transparent:true,depthWrite:false})); s.scale.set(1.3,1.3,1.3); return s; }
+// pre-build shared orb + icon-sprite materials per type (avoids a canvas/texture/material alloc on every power-up spawn)
+const orbMats={}, iconMats={};
+for(const k in PU_COL){ orbMats[k]=new THREE.MeshStandardMaterial({color:PU_COL[k],emissive:PU_COL[k],emissiveIntensity:0.55,roughness:0.3,metalness:0.25,transparent:true,opacity:0.85});
+  const c=document.createElement('canvas'); c.width=c.height=128; const g=c.getContext('2d'); g.font='96px serif'; g.textAlign='center'; g.textBaseline='middle'; g.fillText(PU_ICON[k],64,74);
+  iconMats[k]=new THREE.SpriteMaterial({map:new THREE.CanvasTexture(c),transparent:true,depthWrite:false}); }
 function addPowerup(type,lane,z){ const grp=new THREE.Group();
-  const orb=new THREE.Mesh(orbGeo, new THREE.MeshStandardMaterial({color:PU_COL[type],emissive:PU_COL[type],emissiveIntensity:0.55,roughness:0.3,metalness:0.25,transparent:true,opacity:0.85}));
-  grp.add(orb); grp.add(iconSprite(PU_ICON[type])); grp.position.set(laneOf(lane),1.7,z); scene.add(grp);
+  const orb=new THREE.Mesh(orbGeo, orbMats[type]);
+  const spr=new THREE.Sprite(iconMats[type]); spr.scale.set(1.3,1.3,1.3);
+  grp.add(orb); grp.add(spr); grp.position.set(laneOf(lane),1.7,z); scene.add(grp);
   powerups.push({grp,orb,lane,z,type,got:false}); }
 function trainCoins(o){ if(Math.random()<0.55){ const n=Math.max(4,(o.len/2.4)|0); for(let i=0;i<n;i++) addCoin(o.lane, o.z+2+i*2.2, o.top+0.65); } }  // roof-run payoff (full length)
 function spawnRow(z){
