@@ -1,3 +1,4 @@
 dist/
 .v.js
 *.log
+assets/preview_*.png
