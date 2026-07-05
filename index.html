@@ -85,13 +85,13 @@
   <button class="btn" id="againBtn">RUN AGAIN ▶</button>
 </div>
 
-<div id="verTag">BRAINROT RUSH 3D v11</div>
+<div id="verTag">BRAINROT RUSH 3D v12</div>
 <div id="err" style="position:fixed;left:8px;right:8px;bottom:24px;z-index:30;display:none;background:rgba(120,10,20,.92);color:#fff;font:600 12px monospace;padding:8px 12px;border-radius:8px;white-space:pre-wrap"></div>
 
 <script type="module">
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-const GAME_VERSION='v11';
+const GAME_VERSION='v12';
 const el=id=>document.getElementById(id);
 
 // ============ renderer / scene / camera ============
@@ -259,17 +259,18 @@ function clearWorld(){ for(const o of obstacles){ scene.remove(o.mesh); o.mesh.g
 
 // ---- obstacle spawning (fairness-guaranteed) ----
 let lastOpen=1, nextZ=0;
+const diffOf=()=>Math.min(1, dist/1400);   // 0 at start → 1 by ~1400m
 function addObstacle(type,lane,z){
-  let mesh, top, len;
-  if(type==='train'){ len=14; top=2.7; mesh=new THREE.Mesh(new THREE.BoxGeometry(1.9,top,len), trainMats[(Math.random()*trainMats.length)|0]);
+  let mesh, top, len, bot=0, d=diffOf();
+  if(type==='train'){ len=(Math.random()<0.14+d*0.22)?22:14; top=2.7; mesh=new THREE.Mesh(new THREE.BoxGeometry(1.9,top,len), trainMats[(Math.random()*trainMats.length)|0]);
     mesh.position.set(laneOf(lane), top/2, z+len/2); }
   else if(type==='truck'){ len=5.5; top=2.1; mesh=new THREE.Mesh(new THREE.BoxGeometry(1.9,top,len), trainMats[(Math.random()*trainMats.length)|0]);
     mesh.position.set(laneOf(lane), top/2, z+len/2); }
   else if(type==='low'){ len=1.2; top=1.05; mesh=new THREE.Mesh(new THREE.BoxGeometry(2.0,top,len), barrierMat);
     mesh.position.set(laneOf(lane), top/2, z); }
-  else { /* overhead */ len=1.2; top=3.6; const bot=1.6; mesh=new THREE.Mesh(new THREE.BoxGeometry(2.0,top-bot,len), overMat);
-    mesh.position.set(laneOf(lane), (top+bot)/2, z); obstacles.push({mesh,type,lane,z,z2:z+len,top,bot,len}); scene.add(mesh); return; }
-  scene.add(mesh); obstacles.push({mesh,type,lane,z,z2:z+len,top,bot:0,len});
+  else { /* overhead */ len=1.2; top=3.6; bot=1.6; mesh=new THREE.Mesh(new THREE.BoxGeometry(2.0,top-bot,len), overMat);
+    mesh.position.set(laneOf(lane), (top+bot)/2, z); }
+  scene.add(mesh); const o={mesh,type,lane,z,z2:z+len,top,bot,len}; obstacles.push(o); return o;
 }
 function addCoin(lane,z,y){ const m=new THREE.Mesh(coinGeo,coinMat); m.rotation.x=Math.PI/2; m.position.set(laneOf(lane),y||1.1,z); scene.add(m); coins.push({mesh:m,lane,z,y:y||1.1,got:false}); }
 // ---- power-ups ----
@@ -283,16 +284,16 @@ function addPowerup(type,lane,z){ const grp=new THREE.Group();
   const orb=new THREE.Mesh(orbGeo, new THREE.MeshStandardMaterial({color:PU_COL[type],emissive:PU_COL[type],emissiveIntensity:0.55,roughness:0.3,metalness:0.25,transparent:true,opacity:0.85}));
   grp.add(orb); grp.add(iconSprite(PU_ICON[type])); grp.position.set(laneOf(lane),1.7,z); scene.add(grp);
   powerups.push({grp,orb,lane,z,type,got:false}); }
-function trainCoins(lane,z){ if(Math.random()<0.55) for(let i=0;i<5;i++) addCoin(lane, z+3+i*2.0, 3.35); }  // reward jumping ONTO the roof
+function trainCoins(o){ if(Math.random()<0.55){ const n=Math.max(4,(o.len/2.4)|0); for(let i=0;i<n;i++) addCoin(o.lane, o.z+2+i*2.2, o.top+0.65); } }  // roof-run payoff (full length)
 function spawnRow(z){
   const r=Math.random();
   if(r<0.66){
-    if(Math.random()<0.42){ // two lanes blocked → open lane reachable from lastOpen
+    if(Math.random()<(0.30+diffOf()*0.28)){ // two lanes blocked → open lane reachable (density ramps with distance)
       const ch=[lastOpen-1,lastOpen,lastOpen+1].filter(l=>l>=0&&l<3); const open=ch[(Math.random()*ch.length)|0];
-      for(let L=0;L<3;L++) if(L!==open){ const t=pickType(); addObstacle(t,L,z); if(t==='train') trainCoins(L,z); }
+      for(let L=0;L<3;L++) if(L!==open){ const t=pickType(); const o=addObstacle(t,L,z); if(t==='train') trainCoins(o); }
       lastOpen=open;
     } else {
-      const blk=(Math.random()*3)|0; const t=pickType(); addObstacle(t,blk,z); if(t==='train') trainCoins(blk,z);
+      const blk=(Math.random()*3)|0; const t=pickType(); const o=addObstacle(t,blk,z); if(t==='train') trainCoins(o);
       lastOpen=(blk!==lastOpen)?lastOpen:[lastOpen-1,lastOpen+1].filter(l=>l>=0&&l<3)[0];
     }
   } else { // coin run along the safe lane
@@ -301,7 +302,9 @@ function spawnRow(z){
     if(Math.random()<0.28){ const t=['magnet','shield','x2'][(Math.random()*3)|0]; addPowerup(t, L, z+n*2.4+2.5); }  // reward at the end of a coin run
   }
 }
-function pickType(){ const r=Math.random(); return r<0.42?'train':r<0.64?'truck':r<0.82?'low':'over'; }
+function pickType(){ const d=diffOf(), r=Math.random();   // early: roof-friendly train/truck; late: more jump/roll barriers
+  const pTrain=0.44-d*0.12, pTruck=pTrain+0.24-d*0.06, pLow=pTruck+0.14+d*0.08;
+  return r<pTrain?'train':r<pTruck?'truck':r<pLow?'low':'over'; }
 
 // ============ game state ============
 const MENU=0,PLAY=1,OVER=2; let state=MENU, paused=false;
