@@ -133,12 +133,12 @@
   <button class="btn" id="againBtn">RUN AGAIN ▶</button>
 </div>
 
-<div id="verTag">BRAINROT RUSH 3D v29</div>
+<div id="verTag">BRAINROT RUSH 3D v30</div>
 <div id="err" style="position:fixed;left:8px;right:8px;bottom:24px;z-index:30;display:none;background:rgba(120,10,20,.92);color:#fff;font:600 12px monospace;padding:8px 12px;border-radius:8px;white-space:pre-wrap"></div>
 
 <script type="module">
 import * as THREE from 'three';
-const GAME_VERSION='v29';
+const GAME_VERSION='v30';
 const el=id=>document.getElementById(id);
 
 // ============ renderer / scene / camera ============
@@ -482,6 +482,7 @@ const comboMult=()=>Math.min(5, 1+((combo/5)|0));   // x1 → x5 as the streak g
 function bumpCombo(){ combo++; comboT=2.6; }
 const P={ lane:1, x:0, y:0, vy:0, roll:0, grounded:true };
 let sq=0;   // squash(-) / stretch(+) scalar for jump/land weight
+let pitch=0;   // eased forward-lean / air-pitch of the runner
 let coyoteT=0, jumpBufT=0;   // coyote time (jump just after leaving a ledge) + jump buffering (jump just before landing)
 let best=+localStorage.getItem('br_best')||0, totalCoins=+localStorage.getItem('br_coins')||0;
 
@@ -601,7 +602,7 @@ function reset(){ clearWorld(); speed=SPEED0; dist=0; coins$=0; tRun=0; shake=0;
   pMag=0; pX2=0; pShield=false; pInv=0; pHover=(UPG.headstart||0)*1.6; coyoteT=0; jumpBufT=0; combo=0; comboT=0; roofT=0;
   runSurf=0; runNear=0; runMaxMult=1; biomeIdx=-1; coinPulse=0;
   camera.fov=FOV0; camera.updateProjectionMatrix(); el('pups').textContent='';
-  P.lane=1; P.x=0; P.y=0; P.vy=0; P.roll=0; P.grounded=true; sq=0;
+  P.lane=1; P.x=0; P.y=0; P.vy=0; P.roll=0; P.grounded=true; sq=0; pitch=0;
   // buildings/dashes reset positions handled continuously
 }
 function startGame(){ ac(); reset(); state=PLAY; paused=false;
@@ -701,8 +702,11 @@ function update(dt){
   const L=player.userData.legs; if(P.grounded&&P.roll<=0){ L[0].rotation.x=runcyc*0.9; L[1].rotation.x=-runcyc*0.9; } else { L[0].rotation.x=L[1].rotation.x=(P.roll>0?1.2:-0.5); }
   sq += (0-sq)*Math.min(1,dt*9);   // ease squash/stretch back to neutral
   if(P.roll>0) player.scale.set(1.2,0.55,1.2); else player.scale.set(1-sq*0.5, 1+sq, 1-sq*0.5);
-  player.position.y = P.y;
+  const running = P.grounded && P.roll<=0;
+  player.position.y = P.y + (running ? Math.abs(runcyc)*0.09 : 0);   // stride bob
   player.rotation.z=(tx2-P.x)*0.12;
+  const pitchT = running ? -0.05 : (P.vy>0 ? -0.13 : 0.13);          // lean into run; nose-up rising, nose-down falling
+  pitch += (pitchT-pitch)*Math.min(1,dt*8); player.rotation.x=pitch;
   shadow.position.set(P.x, support+0.02, 0); shadow.scale.setScalar(Math.max(0.4,1-(P.y-support)*0.05));
   board.visible=pHover>0; if(pHover>0){ board.position.set(P.x, P.y+0.1+Math.sin(tRun*12)*0.05, 0); board.rotation.z=(laneOf(P.lane)-P.x)*0.15; }
   // camera
