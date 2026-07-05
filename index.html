@@ -143,6 +143,7 @@
   <div id="goQuip" style="font-size:14px;color:#9fe6ff;font-weight:800;min-height:20px;margin-bottom:4px"></div>
   <button class="btn" id="continueBtn" style="background:linear-gradient(180deg,#8ef07e,#3ac24d);box-shadow:0 8px 0 #1f7a30,0 14px 26px rgba(60,200,80,.4);display:none">CONTINUE 🪙150</button>
   <button class="btn" id="againBtn">RUN AGAIN ▶</button>
+  <button class="btn2" id="shareBtn">📤 SHARE SCORE</button>
 </div>
 
 <div class="overlay hidden" id="pauseMenu">
@@ -152,12 +153,12 @@
   <button class="btn2" id="quitBtn">🏠 QUIT TO MENU</button>
 </div>
 
-<div id="verTag">BRAINROT RUSH 3D v52</div>
+<div id="verTag">BRAINROT RUSH 3D v53</div>
 <div id="err" style="position:fixed;left:8px;right:8px;bottom:24px;z-index:30;display:none;background:rgba(120,10,20,.92);color:#fff;font:600 12px monospace;padding:8px 12px;border-radius:8px;white-space:pre-wrap"></div>
 
 <script type="module">
 import * as THREE from 'three';
-const GAME_VERSION='v52';
+const GAME_VERSION='v53';
 const el=id=>document.getElementById(id);
 
 // ============ renderer / scene / camera ============
@@ -666,6 +667,9 @@ el('dailyBtn').onclick=claimDaily;
 el('resumeBtn').onclick=togglePause;
 el('restartBtn').onclick=()=>{ el('pauseMenu').classList.add('hidden'); startGame(); };
 el('quitBtn').onclick=quitToMenu;
+el('shareBtn').onclick=()=>{ const txt='I ran '+Math.floor(dist)+'m in Brainrot Rush 🧠🇮🇹 — can you beat me?', url=location.href;
+  if(navigator.share){ navigator.share({title:'Brainrot Rush',text:txt,url}).catch(()=>{}); }
+  else if(navigator.clipboard){ navigator.clipboard.writeText(txt+' '+url).then(()=>{ el('shareBtn').textContent='✓ COPIED!'; setTimeout(()=>el('shareBtn').textContent='📤 SHARE SCORE',1500); }).catch(()=>{}); } };
 document.addEventListener('visibilitychange',()=>{ if(document.hidden && state===PLAY && !paused) togglePause(); });   // auto-pause when backgrounded — no unfair deaths
 el('tutGo').onclick=()=>{ localStorage.setItem('br_tut','1'); el('tut').classList.add('hidden'); };
 el('muteBtn').textContent=['🔊','🔈','🔇'][soundMode];
