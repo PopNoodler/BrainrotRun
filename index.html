@@ -146,12 +146,12 @@
   <button class="btn2" id="quitBtn">🏠 QUIT TO MENU</button>
 </div>
 
-<div id="verTag">BRAINROT RUSH 3D v47</div>
+<div id="verTag">BRAINROT RUSH 3D v48</div>
 <div id="err" style="position:fixed;left:8px;right:8px;bottom:24px;z-index:30;display:none;background:rgba(120,10,20,.92);color:#fff;font:600 12px monospace;padding:8px 12px;border-radius:8px;white-space:pre-wrap"></div>
 
 <script type="module">
 import * as THREE from 'three';
-const GAME_VERSION='v47';
+const GAME_VERSION='v48';
 const el=id=>document.getElementById(id);
 
 // ============ renderer / scene / camera ============
@@ -626,7 +626,8 @@ function applySound(){ muted=(soundMode===2); musicOff=(soundMode>=1); el('muteB
   if(muted||musicOff) stopMusic(); else if(state===PLAY&&!paused){ ac(); startMusic(); } }
 function screenFlash(hex){ const f=el('flash'); if(!f)return; f.style.background='#'+hex.toString(16).padStart(6,'0');
   f.style.transition='none'; f.style.opacity='0.28'; requestAnimationFrame(()=>{ f.style.transition='opacity .35s'; f.style.opacity='0'; }); }
-function activatePU(t){ if(t==='magnet')pMag=8+UPG.magnet*2; else if(t==='x2')pX2=10; else if(t==='shield')pShield=true; else if(t==='hover')pHover=10+UPG.hover*2; sPow(); screenFlash(PU_COL[t]); burst(P.x,1.6,0,14,PU_COL[t],7,1.0); }
+const vib=p=>{ if(soundMode<2){ try{ navigator.vibrate && navigator.vibrate(p); }catch(e){} } };   // haptics (Android); off in silent mode
+function activatePU(t){ if(t==='magnet')pMag=8+UPG.magnet*2; else if(t==='x2')pX2=10; else if(t==='shield')pShield=true; else if(t==='hover')pHover=10+UPG.hover*2; sPow(); screenFlash(PU_COL[t]); vib(35); burst(P.x,1.6,0,14,PU_COL[t],7,1.0); }
 function collectCoin(c){ c.got=true; bumpCombo(); coinPulse=0.13;
   const m=comboMult(), val=Math.round(m*(pX2>0?2:1)*(1+UPG.coinboost*0.1)*(c.val||1)); coins$+=val;
   if(c.gem){ sPow(); burst(c.mesh.position.x,c.mesh.position.y,c.z,10,0x6cf0ff,5,0.8); popup(c.mesh.position.x,c.mesh.position.y+0.7,c.z,'💎 +'+val,'#6cf0ff'); }
@@ -687,7 +688,7 @@ function startGame(){ ac(); reset(); state=PLAY; paused=false;
   camera.position.set(0, camBase.y, camBase.z);
   el('menu').classList.add('hidden'); el('gameover').classList.add('hidden'); el('hud').classList.remove('hidden'); el('pauseBtn').style.display='block'; startMusic(); }
 const QUIPS=['Tralalero Tralala 🦈','Bombardiro Crocodilo 🐊✈️','Sahur got tung\'d','Lirilì Larilà 🌵','skibidi sahur','Boneca Ambalabu 🐸','Cappuccino Assassino ☕','brainrot certified 🧠'];
-function die(){ if(state!==PLAY)return; state=DYING; deathT=0; deathVy=15; deathSpin=(P.x<0?1:-1)*7; shake=1.4; stopMusic(); sHit();
+function die(){ if(state!==PLAY)return; state=DYING; deathT=0; deathVy=15; deathSpin=(P.x<0?1:-1)*7; shake=1.4; stopMusic(); sHit(); vib([55,35,95]);
   if(player) player.scale.set(1,1,1); el('combovig').style.opacity=0;
   burst(P.x,P.y+1.2,0,26,0xff7a3d,9,0.9); burst(P.x,P.y+1.2,0,16,0xffe14d,7,0.9); }
 function deathTick(dt){ deathT+=dt; deathVy-=55*dt; P.y+=deathVy*dt;
@@ -763,7 +764,7 @@ function update(dt){
     if(o.type==='over'){ const headTop=P.y + (P.roll>0?1.1:P_H); if(P.y<o.top && headTop>o.bot) crash=true; }
     else if(P.y < o.top-0.5) crash=true;                    // solid: ran into side/front
     if(crash){ if(pHover>0){ o.dead=true; o.z2=-999; o.mesh.visible=false; burst(P.x,1.4,0,8,0x7ef07e,6,0.7); shake=0.3; }
-               else if(pShield){ pShield=false; pInv=1.1; shake=0.8; sShield(); o.dead=true; o.z2=-999; o.mesh.visible=false; }
+               else if(pShield){ pShield=false; pInv=1.1; shake=0.8; sShield(); vib(70); o.dead=true; o.z2=-999; o.mesh.visible=false; }
                else return die(); }
   }
   // magnet: vacuum nearby coins toward the player
