@@ -139,12 +139,12 @@
   <button class="btn" id="againBtn">RUN AGAIN ▶</button>
 </div>
 
-<div id="verTag">BRAINROT RUSH 3D v42</div>
+<div id="verTag">BRAINROT RUSH 3D v43</div>
 <div id="err" style="position:fixed;left:8px;right:8px;bottom:24px;z-index:30;display:none;background:rgba(120,10,20,.92);color:#fff;font:600 12px monospace;padding:8px 12px;border-radius:8px;white-space:pre-wrap"></div>
 
 <script type="module">
 import * as THREE from 'three';
-const GAME_VERSION='v42';
+const GAME_VERSION='v43';
 const el=id=>document.getElementById(id);
 
 // ============ renderer / scene / camera ============
@@ -596,8 +596,9 @@ let musIntv=null, musStep=0;
 function playMus(f,d,type,v,t){ const a=ac(); if(!a)return; const o=a.createOscillator(),g=a.createGain();
   o.type=type; o.frequency.value=f; g.gain.setValueAtTime(0.0001,t); g.gain.linearRampToValueAtTime(v,t+0.02); g.gain.exponentialRampToValueAtTime(0.0001,t+d);
   o.connect(g); g.connect(a.destination); o.start(t); o.stop(t+d+0.05); }
+const MTUNE=[0,3,-2,5];   // per-biome transpose (Città / Tramonto / Notte Neon / Foresta) so music evolves with the world
 function musicTick(){ if(muted){return;} const a=ac(); if(!a)return; const t=a.currentTime+0.03;
-  const step=musStep%16, bar=(musStep/16|0)%MBASS.length, root=MROOT*Math.pow(2,MBASS[bar]/12);
+  const step=musStep%16, bar=(musStep/16|0)%MBASS.length, tune=MTUNE[Math.max(0,biomeIdx)%MTUNE.length], root=MROOT*Math.pow(2,(MBASS[bar]+tune)/12);
   if(step%4===0) playMus(root/2,0.34,'triangle',0.09,t);                                   // bass on quarters
   if(step%2===0) playMus(root*Math.pow(2,MSCALE[(step/2)%MSCALE.length]/12),0.17,'square',0.035,t); // arp on 8ths
   musStep++; }
