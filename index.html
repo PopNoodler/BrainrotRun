@@ -85,13 +85,13 @@
   <button class="btn" id="againBtn">RUN AGAIN ▶</button>
 </div>
 
-<div id="verTag">BRAINROT RUSH 3D v9</div>
+<div id="verTag">BRAINROT RUSH 3D v10</div>
 <div id="err" style="position:fixed;left:8px;right:8px;bottom:24px;z-index:30;display:none;background:rgba(120,10,20,.92);color:#fff;font:600 12px monospace;padding:8px 12px;border-radius:8px;white-space:pre-wrap"></div>
 
 <script type="module">
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-const GAME_VERSION='v9';
+const GAME_VERSION='v10';
 const el=id=>document.getElementById(id);
 
 // ============ renderer / scene / camera ============
@@ -277,16 +277,16 @@ function addPowerup(type,lane,z){ const grp=new THREE.Group();
   const orb=new THREE.Mesh(orbGeo, new THREE.MeshStandardMaterial({color:PU_COL[type],emissive:PU_COL[type],emissiveIntensity:0.55,roughness:0.3,metalness:0.25,transparent:true,opacity:0.85}));
   grp.add(orb); grp.add(iconSprite(PU_ICON[type])); grp.position.set(laneOf(lane),1.7,z); scene.add(grp);
   powerups.push({grp,orb,lane,z,type,got:false}); }
+function trainCoins(lane,z){ if(Math.random()<0.55) for(let i=0;i<5;i++) addCoin(lane, z+3+i*2.0, 3.35); }  // reward jumping ONTO the roof
 function spawnRow(z){
   const r=Math.random();
   if(r<0.66){
     if(Math.random()<0.42){ // two lanes blocked → open lane reachable from lastOpen
       const ch=[lastOpen-1,lastOpen,lastOpen+1].filter(l=>l>=0&&l<3); const open=ch[(Math.random()*ch.length)|0];
-      for(let L=0;L<3;L++) if(L!==open) addObstacle(pickType(),L,z);
+      for(let L=0;L<3;L++) if(L!==open){ const t=pickType(); addObstacle(t,L,z); if(t==='train') trainCoins(L,z); }
       lastOpen=open;
-      // reward: coins on top of a train sometimes (jump-on payoff)
     } else {
-      const blk=(Math.random()*3)|0; addObstacle(pickType(),blk,z);
+      const blk=(Math.random()*3)|0; const t=pickType(); addObstacle(t,blk,z); if(t==='train') trainCoins(blk,z);
       lastOpen=(blk!==lastOpen)?lastOpen:[lastOpen-1,lastOpen+1].filter(l=>l>=0&&l<3)[0];
     }
   } else { // coin run along the safe lane
@@ -302,6 +302,7 @@ const MENU=0,PLAY=1,OVER=2; let state=MENU, paused=false;
 let speed=SPEED0, dist=0, coins$=0, tRun=0, shake=0;
 let pMag=0, pX2=0, pShield=false, pInv=0;   // magnet timer, 2x timer, shield flag, post-shield invuln
 const P={ lane:1, x:0, y:0, vy:0, roll:0, grounded:true };
+let coyoteT=0, jumpBufT=0;   // coyote time (jump just after leaving a ledge) + jump buffering (jump just before landing)
 let best=+localStorage.getItem('br_best')||0, totalCoins=+localStorage.getItem('br_coins')||0;
 
 // ============ audio ============
@@ -318,7 +319,9 @@ function activatePU(t){ if(t==='magnet')pMag=8; else if(t==='x2')pX2=10; else if
 
 // ============ input ============
 function move(d){ if(state!==PLAY||paused)return; const t=Math.max(0,Math.min(2,P.lane+d)); if(t!==P.lane){P.lane=t;sLane();} }
-function jump(){ if(state!==PLAY||paused)return; if(P.grounded&&P.roll<=0){ P.vy=JUMPV; P.grounded=false; sJump(); } }
+function doJump(){ P.vy=JUMPV; P.grounded=false; coyoteT=0; jumpBufT=0; P.roll=0; sJump(); }
+function jump(){ if(state!==PLAY||paused)return; if(P.roll>0)return;
+  if(P.grounded||coyoteT>0) doJump(); else jumpBufT=0.14; }   // buffer if pressed a touch early
 function roll(){ if(state!==PLAY||paused)return; if(!P.grounded){ P.vy=-JUMPV*0.9; } P.roll=0.55; sRoll(); }
 addEventListener('keydown',e=>{ const k=e.key.toLowerCase();
   if((state===MENU||state===OVER)&&(k===' '||k==='enter')){startGame();return;}
@@ -337,7 +340,7 @@ function togglePause(){ if(state!==PLAY)return; paused=!paused; el('pauseBtn').t
 
 // ============ start / over ============
 function reset(){ clearWorld(); speed=SPEED0; dist=0; coins$=0; tRun=0; shake=0; lastOpen=1; nextZ=40;
-  pMag=0; pX2=0; pShield=false; pInv=0; el('pups').textContent='';
+  pMag=0; pX2=0; pShield=false; pInv=0; coyoteT=0; jumpBufT=0; el('pups').textContent='';
   P.lane=1; P.x=0; P.y=0; P.vy=0; P.roll=0; P.grounded=true;
   // buildings/dashes reset positions handled continuously
 }
@@ -368,6 +371,9 @@ function update(dt){
     if(o.z<=0.5 && o.z2>=-0.5){ if(P.y >= o.top-0.5) support=Math.max(support,o.top); }
   }
   if(P.y<=support){ if(P.vy<-0.1&&!P.grounded)sLand(); P.y=support; P.vy=0; P.grounded=true; } else P.grounded=false;
+  // coyote time + buffered jump for responsive controls
+  if(P.grounded){ coyoteT=0.10; if(jumpBufT>0 && P.roll<=0) doJump(); } else if(coyoteT>0) coyoteT-=dt;
+  if(jumpBufT>0) jumpBufT-=dt;
   // move obstacles/coins toward player
   const dz=speed*dt;
   for(const o of obstacles){ o.z-=dz; o.z2-=dz; o.mesh.position.z-=dz; }
