@@ -153,14 +153,15 @@
   <button class="btn2" id="quitBtn">🏠 QUIT TO MENU</button>
 </div>
 
-<div id="verTag">BRAINROT RUSH 3D v54</div>
+<div id="verTag">BRAINROT RUSH 3D v55</div>
 <div id="err" style="position:fixed;left:8px;right:8px;bottom:24px;z-index:30;display:none;background:rgba(120,10,20,.92);color:#fff;font:600 12px monospace;padding:8px 12px;border-radius:8px;white-space:pre-wrap"></div>
 
 <script type="module">
 import * as THREE from 'three';
-const GAME_VERSION='v54';
+const GAME_VERSION='v55';
 const el=id=>document.getElementById(id);
 const setLS=(k,v)=>{ try{ localStorage.setItem(k,v); }catch(e){} };   // safe write (Safari private mode throws on setItem)
+const reduceMotion=(()=>{ try{ return matchMedia('(prefers-reduced-motion: reduce)').matches; }catch(e){ return false; } })();   // a11y: damp shake + FOV kick
 
 // ============ renderer / scene / camera ============
 const renderer=new THREE.WebGLRenderer({antialias:true,powerPreference:'high-performance'});
@@ -706,7 +707,7 @@ function die(){ if(state!==PLAY)return; state=DYING; deathT=0; deathVy=15; death
 function deathTick(dt){ deathT+=dt; deathVy-=55*dt; P.y+=deathVy*dt;
   if(player){ player.position.y=P.y; player.rotation.x+=deathSpin*dt; player.rotation.z+=deathSpin*0.5*dt; }
   camera.position.z += ((camBase.z-3.5)-camera.position.z)*Math.min(1,dt*3);
-  camera.position.y = camBase.y + (shake>0?(Math.random()-0.5)*shake:0);
+  camera.position.y = camBase.y + (shake>0?(Math.random()-0.5)*shake*(reduceMotion?0.25:1):0);
   if(shake>0) shake=Math.max(0,shake-dt*2.2);
   if(deathT>=0.65) finishGameOver(); }
 function finishGameOver(){ state=OVER;
@@ -821,11 +822,11 @@ function update(dt){
   board.visible=pHover>0; if(pHover>0){ board.position.set(P.x, P.y+0.1+Math.sin(tRun*12)*0.05, 0); board.rotation.z=(laneOf(P.lane)-P.x)*0.15; }
   // camera
   camera.position.x += (P.x*0.5 - camera.position.x)*Math.min(1,dt*6);
-  camera.position.y = camBase.y + (shake>0? (Math.random()-0.5)*shake:0);
+  camera.position.y = camBase.y + (shake>0? (Math.random()-0.5)*shake*(reduceMotion?0.25:1):0);
   camera.lookAt(P.x*0.4, 2.6, 12);
   if(shake>0)shake=Math.max(0,shake-dt*3);
-  // speed-reactive FOV kick
-  const fovT=FOV0+(FOVMAX-FOV0)*((speed-SPEED0)/(SPEEDMAX-SPEED0));
+  // speed-reactive FOV kick (disabled under reduced-motion)
+  const fovT=reduceMotion?FOV0:FOV0+(FOVMAX-FOV0)*((speed-SPEED0)/(SPEEDMAX-SPEED0));
   camera.fov+=(fovT-camera.fov)*Math.min(1,dt*2.5); camera.updateProjectionMatrix();
   // hud
   el('scoreBox').innerHTML=Math.floor(dist)+' <small>M</small>'; el('coinBox').textContent='🪙 '+coins$;
