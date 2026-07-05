@@ -133,13 +133,13 @@
   <button class="btn" id="againBtn">RUN AGAIN ▶</button>
 </div>
 
-<div id="verTag">BRAINROT RUSH 3D v22</div>
+<div id="verTag">BRAINROT RUSH 3D v23</div>
 <div id="err" style="position:fixed;left:8px;right:8px;bottom:24px;z-index:30;display:none;background:rgba(120,10,20,.92);color:#fff;font:600 12px monospace;padding:8px 12px;border-radius:8px;white-space:pre-wrap"></div>
 
 <script type="module">
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-const GAME_VERSION='v22';
+const GAME_VERSION='v23';
 const el=id=>document.getElementById(id);
 
 // ============ renderer / scene / camera ============
@@ -276,6 +276,7 @@ const CHARACTERS=[
   {id:'tralalero',  name:'Tralalero Tralala 🦈',   glb:'assets/tralalero.glb',  cost:1500},
   {id:'bombardiro', name:'Bombardiro Crocodilo 🐊✈️', glb:'assets/bombardiro.glb', cost:3000},
   {id:'lirili',     name:'Lirilì Larilà 🌵🐘',      glb:'assets/lirili.glb',     cost:5000},
+  {id:'boneca',     name:'Boneca Ambalabu 🐸🛞',    glb:'assets/boneca.glb',     cost:8000},
 ];
 let owned; try{ owned=JSON.parse(localStorage.getItem('br_owned')||'["sahur"]')||['sahur']; }catch(e){ owned=['sahur']; }
 const isOwned=c=>c.id==='sahur'||owned.includes(c.id);
