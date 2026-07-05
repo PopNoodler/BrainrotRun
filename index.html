@@ -139,12 +139,12 @@
   <button class="btn" id="againBtn">RUN AGAIN ▶</button>
 </div>
 
-<div id="verTag">BRAINROT RUSH 3D v41</div>
+<div id="verTag">BRAINROT RUSH 3D v42</div>
 <div id="err" style="position:fixed;left:8px;right:8px;bottom:24px;z-index:30;display:none;background:rgba(120,10,20,.92);color:#fff;font:600 12px monospace;padding:8px 12px;border-radius:8px;white-space:pre-wrap"></div>
 
 <script type="module">
 import * as THREE from 'three';
-const GAME_VERSION='v41';
+const GAME_VERSION='v42';
 const el=id=>document.getElementById(id);
 
 // ============ renderer / scene / camera ============
@@ -454,7 +454,7 @@ let obstacles=[], coins=[];
 const boxGeo=new THREE.BoxGeometry(1,1,1), obPool=[];
 function obMesh(w,h,ln,mat,px,py,pz){ let m=obPool.pop(); if(m){ m.material=mat; m.visible=true; } else m=new THREE.Mesh(boxGeo,mat); m.scale.set(w,h,ln); m.position.set(px,py,pz); scene.add(m); return m; }
 function poolOb(m){ scene.remove(m); m.visible=true; obPool.push(m); }
-function clearWorld(){ for(const o of obstacles) poolOb(o.mesh); for(const c of coins) scene.remove(c.mesh); for(const pu of powerups) scene.remove(pu.grp); obstacles=[]; coins=[]; powerups=[]; }
+function clearWorld(){ for(const o of obstacles) poolOb(o.mesh); for(const c of coins){ if(!c.got) poolCoin(c); } for(const pu of powerups) scene.remove(pu.grp); obstacles=[]; coins=[]; powerups=[]; }
 
 // ---- obstacle spawning (fairness-guaranteed) ----
 let lastOpen=1, nextZ=0;
@@ -467,10 +467,12 @@ function addObstacle(type,lane,z){
   else { /* overhead */ len=1.2; top=3.6; bot=1.6; mesh=obMesh(2.0,top-bot,len, overMat, laneOf(lane), (top+bot)/2, z); }
   const o={mesh,type,lane,z,z2:z+len,top,bot,len,dead:false}; obstacles.push(o); return o;
 }
-function addCoin(lane,z,y){ const m=new THREE.Mesh(coinGeo,coinMat); m.rotation.x=Math.PI/2; m.position.set(laneOf(lane),y||1.1,z); scene.add(m); coins.push({mesh:m,lane,z,y:y||1.1,got:false}); }
 const gemGeo=new THREE.OctahedronGeometry(0.42,0);
 const gemMat=new THREE.MeshStandardMaterial({color:0x6cf0ff,emissive:0x1a6a8a,emissiveIntensity:0.6,roughness:0.2,metalness:0.4});
-function addGem(lane,z,y){ const m=new THREE.Mesh(gemGeo,gemMat); m.position.set(laneOf(lane),y||1.4,z); scene.add(m); coins.push({mesh:m,lane,z,y:y||1.4,got:false,val:10,gem:true}); }   // rare 10× collectible
+const coinPool=[], gemPool=[];   // pool the most-spawned objects; reset rotation on reuse (coins accumulate spin)
+function addCoin(lane,z,y){ let m=coinPool.pop(); if(m)m.visible=true; else m=new THREE.Mesh(coinGeo,coinMat); m.rotation.set(Math.PI/2,0,0); m.position.set(laneOf(lane),y||1.1,z); scene.add(m); coins.push({mesh:m,lane,z,y:y||1.1,got:false}); }
+function addGem(lane,z,y){ let m=gemPool.pop(); if(m)m.visible=true; else m=new THREE.Mesh(gemGeo,gemMat); m.rotation.set(0,0,0); m.position.set(laneOf(lane),y||1.4,z); scene.add(m); coins.push({mesh:m,lane,z,y:y||1.4,got:false,val:10,gem:true}); }   // rare 10× collectible
+function poolCoin(c){ scene.remove(c.mesh); c.mesh.visible=true; (c.gem?gemPool:coinPool).push(c.mesh); }
 // ---- power-ups ----
 let powerups=[];
 const PU_COL={magnet:0xff4d6d, shield:0x4fd0ff, x2:0xffe14d, hover:0x7ef07e}, PU_ICON={magnet:'🧲', shield:'🛡️', x2:'✖️', hover:'🛹'};
@@ -608,7 +610,7 @@ function collectCoin(c){ c.got=true; bumpCombo(); coinPulse=0.13;
   const m=comboMult(), val=Math.round(m*(pX2>0?2:1)*(1+UPG.coinboost*0.1)*(c.val||1)); coins$+=val;
   if(c.gem){ sPow(); burst(c.mesh.position.x,c.mesh.position.y,c.z,10,0x6cf0ff,5,0.8); popup(c.mesh.position.x,c.mesh.position.y+0.7,c.z,'💎 +'+val,'#6cf0ff'); }
   else { sCoin(); burst(c.mesh.position.x,c.mesh.position.y,c.z,4,0xffe14d,3.2,0.6); if(val>1) popup(c.mesh.position.x, c.mesh.position.y+0.6, c.z, '+'+val, m>1?'#ff9d3d':'#ffe14d'); }
-  scene.remove(c.mesh); }
+  poolCoin(c); }
 
 // ============ input ============
 const menuBlocked=()=>!el('tut').classList.contains('hidden')||!el('shop').classList.contains('hidden');   // an overlay is covering the menu
@@ -748,7 +750,7 @@ function update(dt){
   }
   // cull passed
   obstacles=obstacles.filter(o=>{ if(o.dead || o.z2< -14){ poolOb(o.mesh); return false; } return true; });
-  coins=coins.filter(c=>{ if(c.got)return false; if(c.z< -8){scene.remove(c.mesh);return false;} return true; });
+  coins=coins.filter(c=>{ if(c.got)return false; if(c.z< -8){ poolCoin(c); return false;} return true; });
   powerups=powerups.filter(pu=>{ if(pu.got)return false; if(pu.z< -6){scene.remove(pu.grp);return false;} return true; });
   // spawn ahead
   nextZ-=dz; if(nextZ<=0){ spawnRow(Z_SPAWN); nextZ=Math.max(speed*0.30, 22-dist*0.004); }   // time-based floor: ≥0.30s between rows so high speed stays reactable (was fixed 11 = 0.17s @ max speed)
