@@ -133,12 +133,12 @@
   <button class="btn" id="againBtn">RUN AGAIN ▶</button>
 </div>
 
-<div id="verTag">BRAINROT RUSH 3D v30</div>
+<div id="verTag">BRAINROT RUSH 3D v31</div>
 <div id="err" style="position:fixed;left:8px;right:8px;bottom:24px;z-index:30;display:none;background:rgba(120,10,20,.92);color:#fff;font:600 12px monospace;padding:8px 12px;border-radius:8px;white-space:pre-wrap"></div>
 
 <script type="module">
 import * as THREE from 'three';
-const GAME_VERSION='v30';
+const GAME_VERSION='v31';
 const el=id=>document.getElementById(id);
 
 // ============ renderer / scene / camera ============
@@ -689,7 +689,7 @@ function update(dt){
   coins=coins.filter(c=>{ if(c.got)return false; if(c.z< -8){scene.remove(c.mesh);return false;} return true; });
   powerups=powerups.filter(pu=>{ if(pu.got)return false; if(pu.z< -6){scene.remove(pu.grp);return false;} return true; });
   // spawn ahead
-  nextZ-=dz; if(nextZ<=0){ spawnRow(Z_SPAWN); nextZ=Math.max(11, 22-dist*0.004); }
+  nextZ-=dz; if(nextZ<=0){ spawnRow(Z_SPAWN); nextZ=Math.max(speed*0.30, 22-dist*0.004); }   // time-based floor: ≥0.30s between rows so high speed stays reactable (was fixed 11 = 0.17s @ max speed)
   // biome progression (color shift every ~600m)
   const bi=Math.floor(dist/600)%BIOMES.length; if(bi!==biomeIdx) setBiome(bi, biomeIdx>=0);
   scene.background.lerp(_bg, Math.min(1,dt*2)); scene.fog.color.lerp(_fog, Math.min(1,dt*2));
