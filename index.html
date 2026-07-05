@@ -85,13 +85,13 @@
   <button class="btn" id="againBtn">RUN AGAIN ▶</button>
 </div>
 
-<div id="verTag">BRAINROT RUSH 3D v12</div>
+<div id="verTag">BRAINROT RUSH 3D v13</div>
 <div id="err" style="position:fixed;left:8px;right:8px;bottom:24px;z-index:30;display:none;background:rgba(120,10,20,.92);color:#fff;font:600 12px monospace;padding:8px 12px;border-radius:8px;white-space:pre-wrap"></div>
 
 <script type="module">
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-const GAME_VERSION='v12';
+const GAME_VERSION='v13';
 const el=id=>document.getElementById(id);
 
 // ============ renderer / scene / camera ============
@@ -248,6 +248,22 @@ function burst(x,y,z,n,color,spd,up){ for(let i=0;i<n;i++){ const m=partPool.pop
   const a=Math.random()*6.283, e=Math.random(); parts.push({m, vx:Math.cos(a)*spd*(0.5+e), vy:(up||0.6)*spd*(0.4+Math.random()), vz:Math.sin(a)*spd*(0.5+e), life:0.45+Math.random()*0.35}); } }
 function updateParts(dt){ for(let i=parts.length-1;i>=0;i--){ const p=parts[i]; p.m.position.x+=p.vx*dt; p.m.position.y+=p.vy*dt; p.m.position.z+=(p.vz-speed)*dt; p.vy-=34*dt; p.life-=dt; p.m.scale.setScalar(Math.max(0.02,p.life*2.2)); if(p.life<=0){ p.m.visible=false; partPool.push(p.m); parts.splice(i,1); } } }
 
+// ---- floating score popups (DOM, projected from world space) ----
+const popEls=[]; const _pv=new THREE.Vector3();
+(function(){ const wrap=document.createElement('div'); wrap.id='pops';
+  wrap.style.cssText='position:fixed;inset:0;pointer-events:none;z-index:7;overflow:hidden';
+  document.body.appendChild(wrap);
+  for(let i=0;i<14;i++){ const s=document.createElement('div');
+    s.style.cssText='position:absolute;font-weight:900;font-size:clamp(15px,4vw,22px);text-shadow:0 2px 6px rgba(0,0,0,.75);opacity:0;white-space:nowrap;transform:translate(-50%,-50%);will-change:transform,opacity';
+    wrap.appendChild(s); popEls.push({el:s,life:0,max:1,sx:0,sy:0}); } })();
+function popup(x,y,z,text,color){ let p=null; for(const q of popEls) if(q.life<=0){p=q;break;} if(!p)return;
+  _pv.set(x,y,z).project(camera); if(_pv.z>1)return;
+  p.sx=(_pv.x*0.5+0.5)*innerWidth; p.sy=(-_pv.y*0.5+0.5)*innerHeight;
+  p.el.textContent=text; p.el.style.color=color||'#ffe14d'; p.life=0.85; p.max=0.85; }
+function updatePops(dt){ for(const p of popEls){ if(p.life<=0)continue; p.life-=dt;
+  const k=1-Math.max(0,p.life)/p.max; p.el.style.left=p.sx+'px'; p.el.style.top=(p.sy-k*52)+'px';
+  p.el.style.opacity=p.life>0?Math.min(1,p.life*2.4):0; p.el.style.transform='translate(-50%,-50%) scale('+(0.7+k*0.55)+')'; } }
+
 // ============ obstacle + coin materials/pools ============
 const trainMats=[0xd63b57,0x3b7bd6,0xf0a83b,0x46c24d,0x8a5cff].map(c=>new THREE.MeshLambertMaterial({color:c}));
 const barrierMat=new THREE.MeshLambertMaterial({color:0xff5b6b});
@@ -310,6 +326,9 @@ function pickType(){ const d=diffOf(), r=Math.random();   // early: roof-friendl
 const MENU=0,PLAY=1,OVER=2; let state=MENU, paused=false;
 let speed=SPEED0, dist=0, coins$=0, tRun=0, shake=0;
 let pMag=0, pX2=0, pShield=false, pInv=0;   // magnet timer, 2x timer, shield flag, post-shield invuln
+let combo=0, comboT=0, roofT=0;             // coin-combo streak, its decay timer, roof-surf accumulator
+const comboMult=()=>Math.min(5, 1+((combo/5)|0));   // x1 → x5 as the streak grows (every 5 chain steps)
+function bumpCombo(){ combo++; comboT=2.6; }
 const P={ lane:1, x:0, y:0, vy:0, roll:0, grounded:true };
 let coyoteT=0, jumpBufT=0;   // coyote time (jump just after leaving a ledge) + jump buffering (jump just before landing)
 let best=+localStorage.getItem('br_best')||0, totalCoins=+localStorage.getItem('br_coins')||0;
@@ -325,6 +344,10 @@ const sCoin=()=>tone(880,0.07,'square',0.09,1320), sJump=()=>tone(420,0.13,'sine
 const sPow=()=>{tone(660,0.09,'square',0.12,1320);setTimeout(()=>tone(1040,0.12,'square',0.1,1560),75);};
 const sShield=()=>tone(300,0.28,'sine',0.17,900);
 function activatePU(t){ if(t==='magnet')pMag=8; else if(t==='x2')pX2=10; else if(t==='shield')pShield=true; sPow(); burst(P.x,1.6,0,14,PU_COL[t],7,1.0); }
+function collectCoin(c){ c.got=true; bumpCombo(); const m=comboMult(), val=m*(pX2>0?2:1); coins$+=val;
+  sCoin(); burst(c.mesh.position.x,c.mesh.position.y,c.z,4,0xffe14d,3.2,0.6);
+  if(val>1) popup(c.mesh.position.x, c.mesh.position.y+0.6, c.z, '+'+val, m>1?'#ff9d3d':'#ffe14d');
+  scene.remove(c.mesh); }
 
 // ============ input ============
 function move(d){ if(state!==PLAY||paused)return; const t=Math.max(0,Math.min(2,P.lane+d)); if(t!==P.lane){P.lane=t;sLane();} }
@@ -349,7 +372,7 @@ function togglePause(){ if(state!==PLAY)return; paused=!paused; el('pauseBtn').t
 
 // ============ start / over ============
 function reset(){ clearWorld(); speed=SPEED0; dist=0; coins$=0; tRun=0; shake=0; lastOpen=1; nextZ=40;
-  pMag=0; pX2=0; pShield=false; pInv=0; coyoteT=0; jumpBufT=0; el('pups').textContent='';
+  pMag=0; pX2=0; pShield=false; pInv=0; coyoteT=0; jumpBufT=0; combo=0; comboT=0; roofT=0; el('pups').textContent='';
   P.lane=1; P.x=0; P.y=0; P.vy=0; P.roll=0; P.grounded=true;
   // buildings/dashes reset positions handled continuously
 }
@@ -383,9 +406,21 @@ function update(dt){
   // coyote time + buffered jump for responsive controls
   if(P.grounded){ coyoteT=0.10; if(jumpBufT>0 && P.roll<=0) doJump(); } else if(coyoteT>0) coyoteT-=dt;
   if(jumpBufT>0) jumpBufT-=dt;
+  // roof-surf reward: standing on a train/truck roof drips a bonus (rewards the jump-on-trains mechanic)
+  if(P.grounded && support>0.5){ roofT+=dt; if(roofT>=0.6){ roofT-=0.6; bumpCombo(); const b=comboMult(); coins$+=b;
+    popup(P.x,P.y+2.4,0,'SURF +'+b,'#ffd24d'); burst(P.x,P.y+0.15,0,4,0xffe14d,3,0.6); } } else roofT=0;
+  // combo streak decays if you stop chaining
+  if(comboT>0){ comboT-=dt; if(comboT<=0)combo=0; }
   // move obstacles/coins toward player
   const dz=speed*dt;
-  for(const o of obstacles){ o.z-=dz; o.z2-=dz; o.mesh.position.z-=dz; }
+  for(const o of obstacles){ const pz=o.z; o.z-=dz; o.z2-=dz; o.mesh.position.z-=dz;
+    // near-miss: a train/truck front sweeps past you in an ADJACENT lane while you're on the ground → thrill bonus
+    if(!o.nm && pz>0 && o.z<=0 && (o.type==='train'||o.type==='truck')){ o.nm=true;
+      const dxl=Math.abs(P.x-laneOf(o.lane));
+      if(dxl>0.95 && dxl<LANEX+1.0 && P.y<o.top-0.4){
+        bumpCombo(); const b=2*comboMult(); coins$+=b;
+        popup(P.x,2.3,0,'NEAR MISS +'+b,'#4fd0ff'); burst(P.x+(laneOf(o.lane)>P.x?0.7:-0.7),1.5,0,7,0x4fd0ff,5,0.7); sLane();
+      } } }
   for(const c of coins){ c.z-=dz; c.mesh.position.z-=dz; c.mesh.rotation.z+=dt*6; }
   for(const pu of powerups){ pu.z-=dz; pu.grp.position.z-=dz; pu.orb.rotation.y+=dt*3; pu.grp.position.y=1.7+Math.sin(tRun*4+pu.z)*0.18; }
   // power-up timers
@@ -403,12 +438,10 @@ function update(dt){
   // magnet: vacuum nearby coins toward the player
   if(pMag>0){ for(const c of coins){ if(c.got||c.z>15||c.z<-3) continue;
     c.mesh.position.x += (P.x - c.mesh.position.x)*Math.min(1,dt*7);
-    if(Math.abs(c.z)<2.4 && Math.abs(c.mesh.position.x-P.x)<1.4){ c.got=true; coins$+=pX2>0?2:1; sCoin(); burst(c.mesh.position.x,c.mesh.position.y,c.z,4,0xffe14d,3.2,0.6); scene.remove(c.mesh); } } }
+    if(Math.abs(c.z)<2.4 && Math.abs(c.mesh.position.x-P.x)<1.4){ collectCoin(c); } } }
   // coin collect (normal)
   for(const c of coins){ if(c.got)continue;
-    if(Math.abs(c.z)<1.1 && Math.abs(P.x-laneOf(c.lane))<1.1 && Math.abs((P.y+1.1)-c.y)<1.6){
-      c.got=true; coins$+=pX2>0?2:1; sCoin(); burst(c.mesh.position.x,c.mesh.position.y,c.z,4,0xffe14d,3.2,0.6); scene.remove(c.mesh);
-    }
+    if(Math.abs(c.z)<1.1 && Math.abs(P.x-laneOf(c.lane))<1.1 && Math.abs((P.y+1.1)-c.y)<1.6){ collectCoin(c); }
   }
   // power-up collect
   for(const pu of powerups){ if(pu.got)continue;
@@ -439,7 +472,8 @@ function update(dt){
   if(shake>0)shake=Math.max(0,shake-dt*3);
   // hud
   el('scoreBox').innerHTML=Math.floor(dist)+' <small>M</small>'; el('coinBox').textContent='🪙 '+coins$;
-  el('pups').textContent=(pShield?'🛡️ ':'')+(pMag>0?'🧲 '+Math.ceil(pMag)+' ':'')+(pX2>0?'✖️2 '+Math.ceil(pX2):'');
+  const cm=comboMult();
+  el('pups').textContent=(cm>1?'🔥x'+cm+' ':'')+(pShield?'🛡️ ':'')+(pMag>0?'🧲 '+Math.ceil(pMag)+' ':'')+(pX2>0?'✖️2 '+Math.ceil(pX2):'');
 }
 
 // ============ loop ============
@@ -451,7 +485,7 @@ function animate(now){ let dt=(now-last)/1000; last=now; if(dt>0.05)dt=0.05;
   try{
     if(state===MENU && player){ camera.position.set(0,3.4,-6.8); camera.lookAt(0,1.7,0); player.position.set(0,0,0); player.rotation.y+=dt*0.6; }
     if(state===PLAY&&!paused) update(dt);
-    if(!paused) updateParts(dt);
+    if(!paused){ updateParts(dt); updatePops(dt); }
     renderer.render(scene,camera);
   } catch(err){ showErr(err); }                 // never let one bad frame freeze the whole game
   requestAnimationFrame(animate); }
