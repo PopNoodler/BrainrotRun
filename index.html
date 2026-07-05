@@ -139,12 +139,12 @@
   <button class="btn" id="againBtn">RUN AGAIN ▶</button>
 </div>
 
-<div id="verTag">BRAINROT RUSH 3D v39</div>
+<div id="verTag">BRAINROT RUSH 3D v40</div>
 <div id="err" style="position:fixed;left:8px;right:8px;bottom:24px;z-index:30;display:none;background:rgba(120,10,20,.92);color:#fff;font:600 12px monospace;padding:8px 12px;border-radius:8px;white-space:pre-wrap"></div>
 
 <script type="module">
 import * as THREE from 'three';
-const GAME_VERSION='v39';
+const GAME_VERSION='v40';
 const el=id=>document.getElementById(id);
 
 // ============ renderer / scene / camera ============
@@ -468,6 +468,9 @@ function addObstacle(type,lane,z){
   scene.add(mesh); const o={mesh,type,lane,z,z2:z+len,top,bot,len}; obstacles.push(o); return o;
 }
 function addCoin(lane,z,y){ const m=new THREE.Mesh(coinGeo,coinMat); m.rotation.x=Math.PI/2; m.position.set(laneOf(lane),y||1.1,z); scene.add(m); coins.push({mesh:m,lane,z,y:y||1.1,got:false}); }
+const gemGeo=new THREE.OctahedronGeometry(0.42,0);
+const gemMat=new THREE.MeshStandardMaterial({color:0x6cf0ff,emissive:0x1a6a8a,emissiveIntensity:0.6,roughness:0.2,metalness:0.4});
+function addGem(lane,z,y){ const m=new THREE.Mesh(gemGeo,gemMat); m.position.set(laneOf(lane),y||1.4,z); scene.add(m); coins.push({mesh:m,lane,z,y:y||1.4,got:false,val:10,gem:true}); }   // rare 10× collectible
 // ---- power-ups ----
 let powerups=[];
 const PU_COL={magnet:0xff4d6d, shield:0x4fd0ff, x2:0xffe14d, hover:0x7ef07e}, PU_ICON={magnet:'🧲', shield:'🛡️', x2:'✖️', hover:'🛹'};
@@ -495,7 +498,9 @@ function spawnRow(z){
     const L=Math.random()<0.6?lastOpen:(Math.random()*3)|0, n=5+((Math.random()*4)|0);
     if(Math.random()<0.34){ for(let i=0;i<n;i++) addCoin(L, z+i*2.2, 1.1+Math.sin(i/(n-1)*Math.PI)*3.0); }  // jump-arc trail: peaks at 4.1, collected mid-jump — teaches & rewards jumping
     else { const hi=Math.random()<0.25; for(let i=0;i<n;i++) addCoin(L, z+i*2.4, hi?3.1:1.1); }
-    if(Math.random()<0.28){ const t=['magnet','shield','x2','hover'][(Math.random()*4)|0]; addPowerup(t, L, z+n*2.4+2.5); }  // reward at the end of a coin run
+    const rr=Math.random();
+    if(rr<0.26){ const t=['magnet','shield','x2','hover'][(Math.random()*4)|0]; addPowerup(t, L, z+n*2.4+2.5); }  // power-up at the end of a coin run
+    else if(rr<0.40){ addGem(L, z+n*2.4+2.5, 1.4); }                                                            // …or a rare 💎 gem (10×)
   }
 }
 function pickType(){ const d=diffOf(), r=Math.random();   // early: roof-friendly train/truck; late: more jump/roll barriers
@@ -599,9 +604,10 @@ function stopMusic(){ if(musIntv){ clearInterval(musIntv); musIntv=null; } }
 function screenFlash(hex){ const f=el('flash'); if(!f)return; f.style.background='#'+hex.toString(16).padStart(6,'0');
   f.style.transition='none'; f.style.opacity='0.28'; requestAnimationFrame(()=>{ f.style.transition='opacity .35s'; f.style.opacity='0'; }); }
 function activatePU(t){ if(t==='magnet')pMag=8+UPG.magnet*2; else if(t==='x2')pX2=10; else if(t==='shield')pShield=true; else if(t==='hover')pHover=10+UPG.hover*2; sPow(); screenFlash(PU_COL[t]); burst(P.x,1.6,0,14,PU_COL[t],7,1.0); }
-function collectCoin(c){ c.got=true; bumpCombo(); coinPulse=0.13; const m=comboMult(), val=Math.round(m*(pX2>0?2:1)*(1+UPG.coinboost*0.1)); coins$+=val;
-  sCoin(); burst(c.mesh.position.x,c.mesh.position.y,c.z,4,0xffe14d,3.2,0.6);
-  if(val>1) popup(c.mesh.position.x, c.mesh.position.y+0.6, c.z, '+'+val, m>1?'#ff9d3d':'#ffe14d');
+function collectCoin(c){ c.got=true; bumpCombo(); coinPulse=0.13;
+  const m=comboMult(), val=Math.round(m*(pX2>0?2:1)*(1+UPG.coinboost*0.1)*(c.val||1)); coins$+=val;
+  if(c.gem){ sPow(); burst(c.mesh.position.x,c.mesh.position.y,c.z,10,0x6cf0ff,5,0.8); popup(c.mesh.position.x,c.mesh.position.y+0.7,c.z,'💎 +'+val,'#6cf0ff'); }
+  else { sCoin(); burst(c.mesh.position.x,c.mesh.position.y,c.z,4,0xffe14d,3.2,0.6); if(val>1) popup(c.mesh.position.x, c.mesh.position.y+0.6, c.z, '+'+val, m>1?'#ff9d3d':'#ffe14d'); }
   scene.remove(c.mesh); }
 
 // ============ input ============
