@@ -139,12 +139,19 @@
   <button class="btn" id="againBtn">RUN AGAIN ▶</button>
 </div>
 
-<div id="verTag">BRAINROT RUSH 3D v46</div>
+<div class="overlay hidden" id="pauseMenu">
+  <div class="title" style="font-size:clamp(28px,8vw,48px)">PAUSED</div>
+  <button class="btn" id="resumeBtn">▶ RESUME</button>
+  <button class="btn2" id="restartBtn">🔄 RESTART</button>
+  <button class="btn2" id="quitBtn">🏠 QUIT TO MENU</button>
+</div>
+
+<div id="verTag">BRAINROT RUSH 3D v47</div>
 <div id="err" style="position:fixed;left:8px;right:8px;bottom:24px;z-index:30;display:none;background:rgba(120,10,20,.92);color:#fff;font:600 12px monospace;padding:8px 12px;border-radius:8px;white-space:pre-wrap"></div>
 
 <script type="module">
 import * as THREE from 'three';
-const GAME_VERSION='v46';
+const GAME_VERSION='v47';
 const el=id=>document.getElementById(id);
 
 // ============ renderer / scene / camera ============
@@ -649,10 +656,22 @@ el('prevChar').onclick=()=>cycleChar(-1); el('nextChar').onclick=()=>cycleChar(1
 el('shopBtn').onclick=()=>{ renderShop(); el('menu').classList.add('hidden'); el('shop').classList.remove('hidden'); };
 el('shopBack').onclick=()=>{ el('shop').classList.add('hidden'); el('menu').classList.remove('hidden'); refreshCharUI(); };
 el('dailyBtn').onclick=claimDaily;
+el('resumeBtn').onclick=togglePause;
+el('restartBtn').onclick=()=>{ el('pauseMenu').classList.add('hidden'); startGame(); };
+el('quitBtn').onclick=quitToMenu;
 el('tutGo').onclick=()=>{ localStorage.setItem('br_tut','1'); el('tut').classList.add('hidden'); };
 el('muteBtn').textContent=['🔊','🔈','🔇'][soundMode];
 el('muteBtn').onclick=()=>{ soundMode=(soundMode+1)%3; localStorage.setItem('br_sound',soundMode); applySound(); };
-function togglePause(){ if(state!==PLAY)return; paused=!paused; el('pauseBtn').textContent=paused?'▶':'⏸'; if(paused)stopMusic(); else startMusic(); }
+function togglePause(){ if(state!==PLAY)return; paused=!paused; el('pauseBtn').textContent=paused?'▶':'⏸';
+  if(paused){ stopMusic(); el('pauseMenu').classList.remove('hidden'); } else { el('pauseMenu').classList.add('hidden'); startMusic(); } }
+function quitToMenu(){ // abandon run: bank coins collected so far, record best, return to menu
+  const gain=Math.max(0, coins$-bankedThisRun); totalCoins+=gain; bankedThisRun=coins$; localStorage.setItem('br_coins',totalCoins);
+  if(Math.floor(dist)>best && dist>10){ best=Math.floor(dist); localStorage.setItem('br_best',best); }
+  if(!missionsTicked){ tickMissions({dist:Math.floor(dist), coins:coins$, surf:runSurf, near:runNear, runs:1, maxMult:runMaxMult}); missionsTicked=true; renderMissions(); }
+  stopMusic(); paused=false; state=MENU; el('combovig').style.opacity=0;
+  if(player){ player.rotation.set(0, player.userData.baseRotY||0, 0); player.scale.set(1,1,1); }
+  el('pauseMenu').classList.add('hidden'); el('hud').classList.add('hidden'); el('pauseBtn').style.display='none'; el('pauseBtn').textContent='⏸';
+  el('menu').classList.remove('hidden'); el('mBest').textContent=best; el('mCoins').textContent=totalCoins; refreshCharUI(); refreshDailyUI(); }
 
 // ============ start / over ============
 function reset(){ clearWorld(); speed=SPEED0; dist=0; coins$=0; tRun=0; shake=0; lastMile=0; lastOpen=1; nextZ=40;
