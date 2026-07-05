@@ -35,6 +35,8 @@
   .goRow b{color:#ffe14d}
   #combovig{position:fixed;inset:0;pointer-events:none;z-index:4;opacity:0;transition:opacity .3s;box-shadow:inset 0 0 130px 34px rgba(255,110,30,.6)}
   #flash{position:fixed;inset:0;pointer-events:none;z-index:8;opacity:0;background:#fff}
+  #combobar{position:fixed;top:max(80px,calc(env(safe-area-inset-top) + 68px));left:50%;transform:translateX(-50%);width:124px;height:5px;border-radius:99px;background:rgba(255,255,255,.16);overflow:hidden;z-index:5;opacity:0;transition:opacity .2s;pointer-events:none}
+  #combofill{height:100%;width:100%;background:linear-gradient(90deg,#ffe14d,#ff5b3d);border-radius:99px}
   #pauseBtn{position:fixed;top:max(12px,env(safe-area-inset-top));right:12px;z-index:6;width:40px;height:40px;border-radius:50%;
     border:1px solid rgba(255,255,255,.25);background:rgba(20,24,44,.7);color:#fff;font-size:16px;cursor:pointer;pointer-events:auto;display:none}
   #muteBtn{position:fixed;top:max(12px,env(safe-area-inset-top));right:60px;z-index:12;width:40px;height:40px;border-radius:50%;
@@ -82,6 +84,7 @@
 <button id="muteBtn">🔊</button>
 <div id="combovig"></div>
 <div id="flash"></div>
+<div id="combobar"><div id="combofill"></div></div>
 
 <div id="hud" class="hidden">
   <div id="scoreBox">0 <small>M</small></div>
@@ -146,12 +149,12 @@
   <button class="btn2" id="quitBtn">🏠 QUIT TO MENU</button>
 </div>
 
-<div id="verTag">BRAINROT RUSH 3D v48</div>
+<div id="verTag">BRAINROT RUSH 3D v49</div>
 <div id="err" style="position:fixed;left:8px;right:8px;bottom:24px;z-index:30;display:none;background:rgba(120,10,20,.92);color:#fff;font:600 12px monospace;padding:8px 12px;border-radius:8px;white-space:pre-wrap"></div>
 
 <script type="module">
 import * as THREE from 'three';
-const GAME_VERSION='v48';
+const GAME_VERSION='v49';
 const el=id=>document.getElementById(id);
 
 // ============ renderer / scene / camera ============
@@ -669,7 +672,7 @@ function quitToMenu(){ // abandon run: bank coins collected so far, record best,
   const gain=Math.max(0, coins$-bankedThisRun); totalCoins+=gain; bankedThisRun=coins$; localStorage.setItem('br_coins',totalCoins);
   if(Math.floor(dist)>best && dist>10){ best=Math.floor(dist); localStorage.setItem('br_best',best); }
   if(!missionsTicked){ tickMissions({dist:Math.floor(dist), coins:coins$, surf:runSurf, near:runNear, runs:1, maxMult:runMaxMult}); missionsTicked=true; renderMissions(); }
-  stopMusic(); paused=false; state=MENU; el('combovig').style.opacity=0;
+  stopMusic(); paused=false; state=MENU; el('combovig').style.opacity=0; el('combobar').style.opacity=0;
   if(player){ player.rotation.set(0, player.userData.baseRotY||0, 0); player.scale.set(1,1,1); }
   el('pauseMenu').classList.add('hidden'); el('hud').classList.add('hidden'); el('pauseBtn').style.display='none'; el('pauseBtn').textContent='⏸';
   el('menu').classList.remove('hidden'); el('mBest').textContent=best; el('mCoins').textContent=totalCoins; refreshCharUI(); refreshDailyUI(); }
@@ -689,7 +692,7 @@ function startGame(){ ac(); reset(); state=PLAY; paused=false;
   el('menu').classList.add('hidden'); el('gameover').classList.add('hidden'); el('hud').classList.remove('hidden'); el('pauseBtn').style.display='block'; startMusic(); }
 const QUIPS=['Tralalero Tralala 🦈','Bombardiro Crocodilo 🐊✈️','Sahur got tung\'d','Lirilì Larilà 🌵','skibidi sahur','Boneca Ambalabu 🐸','Cappuccino Assassino ☕','brainrot certified 🧠'];
 function die(){ if(state!==PLAY)return; state=DYING; deathT=0; deathVy=15; deathSpin=(P.x<0?1:-1)*7; shake=1.4; stopMusic(); sHit(); vib([55,35,95]);
-  if(player) player.scale.set(1,1,1); el('combovig').style.opacity=0;
+  if(player) player.scale.set(1,1,1); el('combovig').style.opacity=0; el('combobar').style.opacity=0;
   burst(P.x,P.y+1.2,0,26,0xff7a3d,9,0.9); burst(P.x,P.y+1.2,0,16,0xffe14d,7,0.9); }
 function deathTick(dt){ deathT+=dt; deathVy-=55*dt; P.y+=deathVy*dt;
   if(player){ player.position.y=P.y; player.rotation.x+=deathSpin*dt; player.rotation.z+=deathSpin*0.5*dt; }
@@ -820,6 +823,7 @@ function update(dt){
   if(coinPulse>0)coinPulse-=dt; el('coinBox').style.transform='scale('+(1+Math.max(0,coinPulse)*1.6)+')';
   const cm=comboMult();
   el('combovig').style.opacity = cm>1 ? Math.min(0.85,(cm-1)*0.26) : 0;   // fire-glow intensifies with the combo multiplier
+  if(combo>0){ el('combobar').style.opacity='1'; el('combofill').style.width=Math.max(0,comboT/2.6*100)+'%'; } else el('combobar').style.opacity='0';   // chain timer — keep collecting before it empties
   el('pups').textContent=(cm>1?'🔥x'+cm+' ':'')+(pHover>0?'🛹 '+Math.ceil(pHover)+' ':'')+(pShield?'🛡️ ':'')+(pMag>0?'🧲 '+Math.ceil(pMag)+' ':'')+(pX2>0?'✖️2 '+Math.ceil(pX2):'');
 }
 
