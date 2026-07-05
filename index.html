@@ -43,6 +43,14 @@
   .charbox{min-width:210px}
   .charstat{font-size:12px;font-weight:800;color:#ffe14d;margin-top:3px;letter-spacing:.5px}
   .brl{color:#e0326e}.brm{color:#4fd0ff}
+  #missions{width:min(90vw,360px);margin-top:14px;display:flex;flex-direction:column;gap:7px}
+  .msn{background:rgba(20,16,40,.6);border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:8px 11px;text-align:left}
+  .msnTop{display:flex;justify-content:space-between;align-items:center;font-size:12px;font-weight:800}
+  .msnTop b{color:#ffe14d;font-size:11px}
+  .msnBar{height:6px;border-radius:99px;background:rgba(255,255,255,.14);margin-top:6px;overflow:hidden}
+  .msnFill{height:100%;background:linear-gradient(90deg,#ffe14d,#ff7a3d);border-radius:99px;transition:width .3s}
+  .msnDone .msnFill{background:linear-gradient(90deg,#46c24d,#7ef07e)}
+  .msnHdr{font-size:11px;font-weight:900;letter-spacing:2px;color:#9fe6ff;opacity:.75;text-align:left;text-transform:uppercase;margin-bottom:1px}
 </style>
 <script type="importmap">
 { "imports": { "three": "https://unpkg.com/three@0.160.0/build/three.module.js", "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/" } }
@@ -70,6 +78,7 @@
     <div class="stat"><b id="mBest">0</b><span>best (m)</span></div>
     <div class="stat"><b id="mCoins">0</b><span>coins</span></div>
   </div>
+  <div id="missions"></div>
   <button class="btn" id="playBtn">RUN ▶</button>
   <div class="hint">⬅️ ➡️ / swipe lanes · ⬆️ jump (land on trains!) · ⬇️ roll<br><span class="brl">tralalero</span> <span class="brm">tralala</span> 🦈</div>
 </div>
@@ -85,13 +94,13 @@
   <button class="btn" id="againBtn">RUN AGAIN ▶</button>
 </div>
 
-<div id="verTag">BRAINROT RUSH 3D v14</div>
+<div id="verTag">BRAINROT RUSH 3D v15</div>
 <div id="err" style="position:fixed;left:8px;right:8px;bottom:24px;z-index:30;display:none;background:rgba(120,10,20,.92);color:#fff;font:600 12px monospace;padding:8px 12px;border-radius:8px;white-space:pre-wrap"></div>
 
 <script type="module">
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-const GAME_VERSION='v14';
+const GAME_VERSION='v15';
 const el=id=>document.getElementById(id);
 
 // ============ renderer / scene / camera ============
@@ -328,11 +337,43 @@ const MENU=0,PLAY=1,OVER=2; let state=MENU, paused=false;
 let speed=SPEED0, dist=0, coins$=0, tRun=0, shake=0;
 let pMag=0, pX2=0, pShield=false, pInv=0;   // magnet timer, 2x timer, shield flag, post-shield invuln
 let combo=0, comboT=0, roofT=0;             // coin-combo streak, its decay timer, roof-surf accumulator
+let runSurf=0, runNear=0, runMaxMult=1;     // per-run mission stats (surfs, near-misses, best combo mult)
 const comboMult=()=>Math.min(5, 1+((combo/5)|0));   // x1 → x5 as the streak grows (every 5 chain steps)
 function bumpCombo(){ combo++; comboT=2.6; }
 const P={ lane:1, x:0, y:0, vy:0, roll:0, grounded:true };
 let coyoteT=0, jumpBufT=0;   // coyote time (jump just after leaving a ledge) + jump buffering (jump just before landing)
 let best=+localStorage.getItem('br_best')||0, totalCoins=+localStorage.getItem('br_coins')||0;
+
+// ============ missions (retention loop — goals that pay coins & reroll on completion) ============
+const MPOOL=[
+  {kind:'dist', reward:250, roll:()=>{const g=[500,700,900,1200][(Math.random()*4)|0]; return {goal:g, desc:'🏃 Run '+g+'m in one run'};}},
+  {kind:'coins',reward:200, roll:()=>{const g=[150,250,350,500][(Math.random()*4)|0]; return {goal:g, desc:'🪙 Collect '+g+' coins in a run'};}},
+  {kind:'surf', reward:300, roll:()=>{const g=[4,6,8][(Math.random()*3)|0];       return {goal:g, desc:'🚂 Surf '+g+' train roofs'};}},
+  {kind:'near', reward:300, roll:()=>{const g=[5,8,12][(Math.random()*3)|0];      return {goal:g, desc:'😎 Pull '+g+' near-misses'};}},
+  {kind:'combo',reward:350, roll:()=>{const g=[3,4,5][(Math.random()*3)|0];       return {goal:g, desc:'🔥 Reach a x'+g+' combo'};}},
+  {kind:'runs', reward:150, roll:()=>{const g=[3,5][(Math.random()*2)|0];         return {goal:g, desc:'🎮 Play '+g+' runs'};}},
+];
+function newMission(avoid){ let t; do{ t=MPOOL[(Math.random()*MPOOL.length)|0]; }while(avoid&&avoid.includes(t.kind)&&avoid.length<MPOOL.length);
+  const r=t.roll(); return {kind:t.kind, reward:t.reward, goal:r.goal, desc:r.desc, prog:0, done:false}; }
+function saveMissions(){ localStorage.setItem('br_missions', JSON.stringify(missions)); }
+let missions; try{ missions=JSON.parse(localStorage.getItem('br_missions')); }catch(e){ missions=null; }
+if(!Array.isArray(missions)||missions.length!==3){ missions=[]; while(missions.length<3) missions.push(newMission(missions.map(m=>m.kind))); saveMissions(); }
+function renderMissions(){ const box=el('missions'); if(!box)return;
+  box.innerHTML='<div class="msnHdr">🎯 Missions</div>'+missions.map(m=>{
+    const pct=Math.min(100,(m.prog/m.goal)*100), done=m.prog>=m.goal;
+    return '<div class="msn'+(done?' msnDone':'')+'"><div class="msnTop"><span>'+(done?'✅ ':'')+m.desc+'</span><b>🪙'+m.reward+'</b></div><div class="msnBar"><div class="msnFill" style="width:'+pct+'%"></div></div></div>';
+  }).join(''); }
+function tickMissions(rs){ let rewarded=0;
+  for(const m of missions){ if(m.done)continue;
+    if(m.kind==='dist'||m.kind==='combo'||m.kind==='coins')
+      m.prog=Math.max(m.prog, m.kind==='dist'?rs.dist : m.kind==='combo'?rs.maxMult : rs.coins);
+    else m.prog=Math.min(m.goal, m.prog + (rs[m.kind]||0));   // surf / near / runs accumulate
+    if(m.prog>=m.goal){ m.done=true; rewarded+=m.reward; }
+  }
+  if(rewarded){ totalCoins+=rewarded; localStorage.setItem('br_coins',totalCoins); }
+  missions=missions.map(m=> m.done? newMission(missions.filter(x=>x!==m).map(x=>x.kind)) : m);
+  saveMissions(); return rewarded;
+}
 
 // ============ audio ============
 let AC=null,muted=false; const ac=()=>{ if(!AC){try{AC=new (AudioContext||webkitAudioContext)()}catch(e){}} return AC; };
@@ -373,7 +414,8 @@ function togglePause(){ if(state!==PLAY)return; paused=!paused; el('pauseBtn').t
 
 // ============ start / over ============
 function reset(){ clearWorld(); speed=SPEED0; dist=0; coins$=0; tRun=0; shake=0; lastOpen=1; nextZ=40;
-  pMag=0; pX2=0; pShield=false; pInv=0; coyoteT=0; jumpBufT=0; combo=0; comboT=0; roofT=0; el('pups').textContent='';
+  pMag=0; pX2=0; pShield=false; pInv=0; coyoteT=0; jumpBufT=0; combo=0; comboT=0; roofT=0;
+  runSurf=0; runNear=0; runMaxMult=1; el('pups').textContent='';
   P.lane=1; P.x=0; P.y=0; P.vy=0; P.roll=0; P.grounded=true;
   // buildings/dashes reset positions handled continuously
 }
@@ -384,8 +426,9 @@ function startGame(){ ac(); reset(); state=PLAY; paused=false;
 const QUIPS=['Tralalero Tralala 🦈','Bombardiro Crocodilo 🐊✈️','Sahur got tung\'d','Lirilì Larilà 🌵','skibidi sahur','Boneca Ambalabu 🐸','Cappuccino Assassino ☕','brainrot certified 🧠'];
 function gameOver(){ state=OVER; shake=1.2; sHit(); burst(P.x,P.y+1.2,0,26,0xff7a3d,9,0.9); burst(P.x,P.y+1.2,0,16,0xffe14d,7,0.9); totalCoins+=coins$; localStorage.setItem('br_coins',totalCoins);
   if(dist>best){best=Math.floor(dist);localStorage.setItem('br_best',best);}
+  const mGain=tickMissions({dist:Math.floor(dist), coins:coins$, surf:runSurf, near:runNear, runs:1, maxMult:runMaxMult}); renderMissions();
   el('goDist').textContent=Math.floor(dist)+' m'; el('goCoins').textContent=coins$; el('goBest').textContent=best+' m';
-  el('goQuip').textContent=QUIPS[(Math.random()*QUIPS.length)|0];
+  el('goQuip').textContent=mGain?('🎯 Mission complete! +🪙'+mGain):QUIPS[(Math.random()*QUIPS.length)|0];
   setTimeout(()=>{ el('hud').classList.add('hidden'); el('pauseBtn').style.display='none'; el('gameover').classList.remove('hidden'); el('mBest').textContent=best; el('mCoins').textContent=totalCoins; },320); }
 
 // ============ update ============
@@ -408,8 +451,9 @@ function update(dt){
   if(P.grounded){ coyoteT=0.10; if(jumpBufT>0 && P.roll<=0) doJump(); } else if(coyoteT>0) coyoteT-=dt;
   if(jumpBufT>0) jumpBufT-=dt;
   // roof-surf reward: standing on a train/truck roof drips a bonus (rewards the jump-on-trains mechanic)
-  if(P.grounded && support>0.5){ roofT+=dt; if(roofT>=0.6){ roofT-=0.6; bumpCombo(); const b=comboMult(); coins$+=b;
+  if(P.grounded && support>0.5){ roofT+=dt; if(roofT>=0.6){ roofT-=0.6; bumpCombo(); const b=comboMult(); coins$+=b; runSurf++;
     popup(P.x,P.y+2.4,0,'SURF +'+b,'#ffd24d'); burst(P.x,P.y+0.15,0,4,0xffe14d,3,0.6); } } else roofT=0;
+  if(comboMult()>runMaxMult) runMaxMult=comboMult();
   // combo streak decays if you stop chaining
   if(comboT>0){ comboT-=dt; if(comboT<=0)combo=0; }
   // move obstacles/coins toward player
@@ -419,7 +463,7 @@ function update(dt){
     if(!o.nm && pz>0 && o.z<=0 && (o.type==='train'||o.type==='truck')){ o.nm=true;
       const dxl=Math.abs(P.x-laneOf(o.lane));
       if(dxl>0.95 && dxl<LANEX+1.0 && P.y<o.top-0.4){
-        bumpCombo(); const b=2*comboMult(); coins$+=b;
+        bumpCombo(); const b=2*comboMult(); coins$+=b; runNear++;
         popup(P.x,2.3,0,'NEAR MISS +'+b,'#4fd0ff'); burst(P.x+(laneOf(o.lane)>P.x?0.7:-0.7),1.5,0,7,0x4fd0ff,5,0.7); sLane();
       } } }
   for(const c of coins){ c.z-=dz; c.mesh.position.z-=dz; c.mesh.rotation.z+=dt*6; }
@@ -491,7 +535,7 @@ function animate(now){ let dt=(now-last)/1000; last=now; if(dt>0.05)dt=0.05;
   } catch(err){ showErr(err); }                 // never let one bad frame freeze the whole game
   requestAnimationFrame(animate); }
 
-el('mBest').textContent=best; el('mCoins').textContent=totalCoins; el('verTag').textContent='BRAINROT RUSH 3D '+GAME_VERSION;
+el('mBest').textContent=best; el('mCoins').textContent=totalCoins; el('verTag').textContent='BRAINROT RUSH 3D '+GAME_VERSION; renderMissions();
 // (menu is revealed by revealMenu() once the model loads or falls back)
 requestAnimationFrame(animate);
 
