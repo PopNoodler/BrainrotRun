@@ -6,6 +6,8 @@
 <meta name="theme-color" content="#0a0e1a">
 <title>Brainrot Rush 3D — Tung Tung Tung Sahur</title>
 <link rel="manifest" href="manifest.json">
+<link rel="icon" href="assets/icon.svg">
+<link rel="apple-touch-icon" href="assets/icon.svg">
 <style>
   *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
   html,body{height:100%;overflow:hidden;background:#0a0e1a;font-family:-apple-system,Segoe UI,Roboto,sans-serif;color:#fff;user-select:none;touch-action:none}
@@ -108,6 +110,7 @@
   <div id="missions"></div>
   <button class="btn" id="playBtn">RUN ▶</button>
   <button class="btn2" id="shopBtn">🛒 UPGRADES</button>
+  <button class="btn2" id="installBtn" style="display:none">📲 INSTALL APP</button>
   <div class="hint">⬅️ ➡️ / swipe lanes · ⬆️ jump (land on trains!) · ⬇️ roll<br><span class="brl">tralalero</span> <span class="brm">tralala</span> 🦈</div>
 </div>
 
@@ -149,12 +152,12 @@
   <button class="btn2" id="quitBtn">🏠 QUIT TO MENU</button>
 </div>
 
-<div id="verTag">BRAINROT RUSH 3D v50</div>
+<div id="verTag">BRAINROT RUSH 3D v51</div>
 <div id="err" style="position:fixed;left:8px;right:8px;bottom:24px;z-index:30;display:none;background:rgba(120,10,20,.92);color:#fff;font:600 12px monospace;padding:8px 12px;border-radius:8px;white-space:pre-wrap"></div>
 
 <script type="module">
 import * as THREE from 'three';
-const GAME_VERSION='v50';
+const GAME_VERSION='v51';
 const el=id=>document.getElementById(id);
 
 // ============ renderer / scene / camera ============
@@ -850,6 +853,11 @@ requestAnimationFrame(animate);
 if('serviceWorker' in navigator && (location.hostname.endsWith('github.io')||location.hostname==='localhost')){
   addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
 }
+// ---- PWA install prompt (add-to-home-screen) ----
+let deferredPrompt=null;
+addEventListener('beforeinstallprompt',e=>{ e.preventDefault(); deferredPrompt=e; const b=el('installBtn'); if(b)b.style.display='block'; });
+el('installBtn').onclick=async()=>{ if(!deferredPrompt)return; deferredPrompt.prompt(); try{ await deferredPrompt.userChoice; }catch(e){} deferredPrompt=null; el('installBtn').style.display='none'; };
+addEventListener('appinstalled',()=>{ deferredPrompt=null; const b=el('installBtn'); if(b)b.style.display='none'; });
 </script>
 </body>
 </html>
