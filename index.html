@@ -50,6 +50,7 @@
 <div id="hud" class="hidden">
   <div id="scoreBox">0 <small>M</small></div>
   <div id="coinBox">🪙 0</div>
+  <div id="pups" style="position:fixed;top:max(52px,calc(env(safe-area-inset-top) + 40px));left:0;right:0;text-align:center;font-weight:900;font-size:16px;color:#9fe6ff;text-shadow:0 2px 6px rgba(0,0,0,.7)"></div>
 </div>
 
 <div class="overlay hidden" id="menu">
@@ -75,13 +76,13 @@
   <button class="btn" id="againBtn">RUN AGAIN ▶</button>
 </div>
 
-<div id="verTag">BRAINROT RUSH 3D v7</div>
+<div id="verTag">BRAINROT RUSH 3D v8</div>
 <div id="err" style="position:fixed;left:8px;right:8px;bottom:24px;z-index:30;display:none;background:rgba(120,10,20,.92);color:#fff;font:600 12px monospace;padding:8px 12px;border-radius:8px;white-space:pre-wrap"></div>
 
 <script type="module">
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-const GAME_VERSION='v7';
+const GAME_VERSION='v8';
 const el=id=>document.getElementById(id);
 
 // ============ renderer / scene / camera ============
@@ -219,7 +220,7 @@ const overMat=new THREE.MeshLambertMaterial({color:0x4fd0ff});
 const coinGeo=new THREE.CylinderGeometry(0.42,0.42,0.12,16);
 const coinMat=new THREE.MeshLambertMaterial({color:0xffe14d,emissive:0x6b5410});
 let obstacles=[], coins=[];
-function clearWorld(){ for(const o of obstacles){ scene.remove(o.mesh); o.mesh.geometry.dispose(); } for(const c of coins) scene.remove(c.mesh); obstacles=[]; coins=[]; }
+function clearWorld(){ for(const o of obstacles){ scene.remove(o.mesh); o.mesh.geometry.dispose(); } for(const c of coins) scene.remove(c.mesh); for(const pu of powerups) scene.remove(pu.grp); obstacles=[]; coins=[]; powerups=[]; }
 
 // ---- obstacle spawning (fairness-guaranteed) ----
 let lastOpen=1, nextZ=0;
@@ -236,6 +237,17 @@ function addObstacle(type,lane,z){
   scene.add(mesh); obstacles.push({mesh,type,lane,z,z2:z+len,top,bot:0,len});
 }
 function addCoin(lane,z,y){ const m=new THREE.Mesh(coinGeo,coinMat); m.rotation.x=Math.PI/2; m.position.set(laneOf(lane),y||1.1,z); scene.add(m); coins.push({mesh:m,lane,z,y:y||1.1,got:false}); }
+// ---- power-ups ----
+let powerups=[];
+const PU_COL={magnet:0xff4d6d, shield:0x4fd0ff, x2:0xffe14d}, PU_ICON={magnet:'🧲', shield:'🛡️', x2:'✖️'};
+const orbGeo=new THREE.IcosahedronGeometry(0.5,1);
+function iconSprite(emoji){ const c=document.createElement('canvas'); c.width=c.height=128; const g=c.getContext('2d');
+  g.font='96px serif'; g.textAlign='center'; g.textBaseline='middle'; g.fillText(emoji,64,74);
+  const s=new THREE.Sprite(new THREE.SpriteMaterial({map:new THREE.CanvasTexture(c),transparent:true,depthWrite:false})); s.scale.set(1.3,1.3,1.3); return s; }
+function addPowerup(type,lane,z){ const grp=new THREE.Group();
+  const orb=new THREE.Mesh(orbGeo, new THREE.MeshStandardMaterial({color:PU_COL[type],emissive:PU_COL[type],emissiveIntensity:0.55,roughness:0.3,metalness:0.25,transparent:true,opacity:0.85}));
+  grp.add(orb); grp.add(iconSprite(PU_ICON[type])); grp.position.set(laneOf(lane),1.7,z); scene.add(grp);
+  powerups.push({grp,orb,lane,z,type,got:false}); }
 function spawnRow(z){
   const r=Math.random();
   if(r<0.66){
@@ -251,6 +263,7 @@ function spawnRow(z){
   } else { // coin run along the safe lane
     const L=Math.random()<0.6?lastOpen:(Math.random()*3)|0, n=5+((Math.random()*4)|0), hi=Math.random()<0.3;
     for(let i=0;i<n;i++) addCoin(L, z+i*2.4, hi?3.1:1.1);
+    if(Math.random()<0.28){ const t=['magnet','shield','x2'][(Math.random()*3)|0]; addPowerup(t, L, z+n*2.4+2.5); }  // reward at the end of a coin run
   }
 }
 function pickType(){ const r=Math.random(); return r<0.42?'train':r<0.64?'truck':r<0.82?'low':'over'; }
@@ -258,6 +271,7 @@ function pickType(){ const r=Math.random(); return r<0.42?'train':r<0.64?'truck'
 // ============ game state ============
 const MENU=0,PLAY=1,OVER=2; let state=MENU, paused=false;
 let speed=SPEED0, dist=0, coins$=0, tRun=0, shake=0;
+let pMag=0, pX2=0, pShield=false, pInv=0;   // magnet timer, 2x timer, shield flag, post-shield invuln
 const P={ lane:1, x:0, y:0, vy:0, roll:0, grounded:true };
 let best=+localStorage.getItem('br_best')||0, totalCoins=+localStorage.getItem('br_coins')||0;
 
@@ -269,6 +283,9 @@ function tone(f,d,t,v,s){ if(muted)return; const a=ac(); if(!a)return; const o=a
 const sCoin=()=>tone(880,0.07,'square',0.09,1320), sJump=()=>tone(420,0.13,'sine',0.13,760), sRoll=()=>tone(260,0.13,'sawtooth',0.09,120),
   sLane=()=>tone(600,0.05,'triangle',0.06,720), sLand=()=>tone(200,0.08,'sine',0.1,120),
   sHit=()=>{tone(180,0.3,'sawtooth',0.2,60);setTimeout(()=>tone(90,0.4,'sawtooth',0.16,50),80);};
+const sPow=()=>{tone(660,0.09,'square',0.12,1320);setTimeout(()=>tone(1040,0.12,'square',0.1,1560),75);};
+const sShield=()=>tone(300,0.28,'sine',0.17,900);
+function activatePU(t){ if(t==='magnet')pMag=8; else if(t==='x2')pX2=10; else if(t==='shield')pShield=true; sPow(); }
 
 // ============ input ============
 function move(d){ if(state!==PLAY||paused)return; const t=Math.max(0,Math.min(2,P.lane+d)); if(t!==P.lane){P.lane=t;sLane();} }
@@ -290,6 +307,7 @@ function togglePause(){ if(state!==PLAY)return; paused=!paused; el('pauseBtn').t
 
 // ============ start / over ============
 function reset(){ clearWorld(); speed=SPEED0; dist=0; coins$=0; tRun=0; shake=0; lastOpen=1; nextZ=40;
+  pMag=0; pX2=0; pShield=false; pInv=0; el('pups').textContent='';
   P.lane=1; P.x=0; P.y=0; P.vy=0; P.roll=0; P.grounded=true;
   // buildings/dashes reset positions handled continuously
 }
@@ -322,24 +340,39 @@ function update(dt){
   const dz=speed*dt;
   for(const o of obstacles){ o.z-=dz; o.z2-=dz; o.mesh.position.z-=dz; }
   for(const c of coins){ c.z-=dz; c.mesh.position.z-=dz; c.mesh.rotation.z+=dt*6; }
-  // collisions (player plane at z≈0)
-  for(const o of obstacles){
+  for(const pu of powerups){ pu.z-=dz; pu.grp.position.z-=dz; pu.orb.rotation.y+=dt*3; pu.grp.position.y=1.7+Math.sin(tRun*4+pu.z)*0.18; }
+  // power-up timers
+  if(pMag>0)pMag-=dt; if(pX2>0)pX2-=dt; if(pInv>0)pInv-=dt;
+  // collisions (player plane at z≈0) — shield saves you & clears the obstacle
+  if(pInv<=0) for(const o of obstacles){
     if(o.z>P_HALF || o.z2< -P_HALF) continue;               // not at player plane
-    const dxl=Math.abs(P.x-laneOf(o.lane)); if(dxl>0.95+ (o.type==='low'?0:0)) continue;  // different lane
-    if(o.type==='over'){ const headTop=P.y + (P.roll>0?1.1:P_H); if(P.y<o.top && headTop>o.bot){ return gameOver(); } }
-    else { // solid: crash if our feet are below its top (we ran into the side/front)
-      if(P.y < o.top-0.5){ return gameOver(); }
-    }
+    const dxl=Math.abs(P.x-laneOf(o.lane)); if(dxl>0.95) continue;  // different lane
+    let crash=false;
+    if(o.type==='over'){ const headTop=P.y + (P.roll>0?1.1:P_H); if(P.y<o.top && headTop>o.bot) crash=true; }
+    else if(P.y < o.top-0.5) crash=true;                    // solid: ran into side/front
+    if(crash){ if(pShield){ pShield=false; pInv=1.1; shake=0.8; sShield(); o.z2=-999; scene.remove(o.mesh); o.mesh.geometry.dispose(); }
+               else return gameOver(); }
   }
-  // coin collect
+  // magnet: vacuum nearby coins toward the player
+  if(pMag>0){ for(const c of coins){ if(c.got||c.z>15||c.z<-3) continue;
+    c.mesh.position.x += (P.x - c.mesh.position.x)*Math.min(1,dt*7);
+    if(Math.abs(c.z)<2.4 && Math.abs(c.mesh.position.x-P.x)<1.4){ c.got=true; coins$+=pX2>0?2:1; sCoin(); scene.remove(c.mesh); } } }
+  // coin collect (normal)
   for(const c of coins){ if(c.got)continue;
     if(Math.abs(c.z)<1.1 && Math.abs(P.x-laneOf(c.lane))<1.1 && Math.abs((P.y+1.1)-c.y)<1.6){
-      c.got=true; coins$++; sCoin(); scene.remove(c.mesh);
+      c.got=true; coins$+=pX2>0?2:1; sCoin(); scene.remove(c.mesh);
+    }
+  }
+  // power-up collect
+  for(const pu of powerups){ if(pu.got)continue;
+    if(Math.abs(pu.z)<1.4 && Math.abs(P.x-laneOf(pu.lane))<1.4 && Math.abs((P.y+1.1)-pu.grp.position.y)<2.2){
+      pu.got=true; scene.remove(pu.grp); activatePU(pu.type);
     }
   }
   // cull passed
   obstacles=obstacles.filter(o=>{ if(o.z2< -14){scene.remove(o.mesh); o.mesh.geometry.dispose(); return false;} return true; });
   coins=coins.filter(c=>{ if(c.got)return false; if(c.z< -8){scene.remove(c.mesh);return false;} return true; });
+  powerups=powerups.filter(pu=>{ if(pu.got)return false; if(pu.z< -6){scene.remove(pu.grp);return false;} return true; });
   // spawn ahead
   nextZ-=dz; if(nextZ<=0){ spawnRow(Z_SPAWN); nextZ=Math.max(11, 22-dist*0.004); }
   // recycle scenery
@@ -359,6 +392,7 @@ function update(dt){
   if(shake>0)shake=Math.max(0,shake-dt*3);
   // hud
   el('scoreBox').innerHTML=Math.floor(dist)+' <small>M</small>'; el('coinBox').textContent='🪙 '+coins$;
+  el('pups').textContent=(pShield?'🛡️ ':'')+(pMag>0?'🧲 '+Math.ceil(pMag)+' ':'')+(pX2>0?'✖️2 '+Math.ceil(pX2):'');
 }
 
 // ============ loop ============
