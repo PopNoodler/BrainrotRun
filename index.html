@@ -37,6 +37,11 @@
     border:1px solid rgba(255,255,255,.25);background:rgba(20,24,44,.7);color:#fff;font-size:16px;cursor:pointer;pointer-events:auto;display:none}
   #verTag{position:fixed;bottom:6px;left:0;right:0;text-align:center;font-size:10px;opacity:.3;letter-spacing:2px;z-index:11}
   #loading{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:20px;color:#9fe6ff;z-index:20;background:#0a0e1a}
+  .charsel{display:flex;align-items:center;justify-content:center;gap:14px;margin-top:8px}
+  .arrow{width:46px;height:46px;border-radius:50%;border:1px solid rgba(255,255,255,.3);background:rgba(30,20,60,.6);color:#fff;font-size:20px;cursor:pointer;flex:0 0 auto}
+  .arrow:active{transform:scale(.9)}
+  .charbox{min-width:210px}
+  .charstat{font-size:12px;font-weight:800;color:#ffe14d;margin-top:3px;letter-spacing:.5px}
   .brl{color:#e0326e}.brm{color:#4fd0ff}
 </style>
 <script type="importmap">
@@ -56,7 +61,11 @@
 <div class="overlay hidden" id="menu">
   <div class="flag">🇮🇹 🧠 🇮🇹</div>
   <div class="title">BRAINROT<br>RUSH</div>
-  <div class="subtitle">Tung Tung Tung Sahur</div>
+  <div class="charsel">
+    <button id="prevChar" class="arrow">◀</button>
+    <div class="charbox"><div id="charName" class="subtitle">Tung Tung Tung Sahur</div><div id="charStatus" class="charstat">✓ owned</div></div>
+    <button id="nextChar" class="arrow">▶</button>
+  </div>
   <div class="stats">
     <div class="stat"><b id="mBest">0</b><span>best (m)</span></div>
     <div class="stat"><b id="mCoins">0</b><span>coins</span></div>
@@ -76,13 +85,13 @@
   <button class="btn" id="againBtn">RUN AGAIN ▶</button>
 </div>
 
-<div id="verTag">BRAINROT RUSH 3D v8</div>
+<div id="verTag">BRAINROT RUSH 3D v9</div>
 <div id="err" style="position:fixed;left:8px;right:8px;bottom:24px;z-index:30;display:none;background:rgba(120,10,20,.92);color:#fff;font:600 12px monospace;padding:8px 12px;border-radius:8px;white-space:pre-wrap"></div>
 
 <script type="module">
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-const GAME_VERSION='v8';
+const GAME_VERSION='v9';
 const el=id=>document.getElementById(id);
 
 // ============ renderer / scene / camera ============
@@ -197,18 +206,38 @@ function buildSahur(){
   return g;
 }
 // ---- load the Blender-authored GLB (procedural fallback if it fails) ----
-let player;
-function revealMenu(){ el('loading').style.display='none'; el('menu').classList.remove('hidden'); }
-function useModel(g, legs, rotY){ player=g; player.rotation.y=rotY||0; scene.add(player); player.userData={legs}; revealMenu(); }
-function fallbackModel(){ const g=buildSahur(); useModel(g, g.userData.legs, 0); }
-new GLTFLoader().load('assets/sahur.glb',
-  gltf=>{ try{ const g=gltf.scene; const L=[g.getObjectByName('LegL'), g.getObjectByName('LegR')];
-    if(!L[0]||!L[1]){ showErr('GLB ok but legs missing; nodes: '+[].concat(...g.children.map(c=>c.name)).join(',')); fallbackModel(); return; }
-    useModel(g, L, Math.PI);   // Blender face +Y → glTF -Z after Y-up; flip to face +Z (away from cam)
-  }catch(e){ showErr('GLB setup error: '+e.message); fallbackModel(); } },
-  undefined,
-  err=>{ showErr('GLB failed to load'+(location.protocol==='file:'?' — you are on file://, the model can only load from the live URL / a server. Use https://popnoodler.github.io/BrainrotRun/':' ('+((err&&(err.message||err.type))||'?')+')')); fallbackModel(); }
-);
+// ---- character roster (Blender-authored GLBs, procedural fallback) ----
+const CHARACTERS=[
+  {id:'sahur',     name:'Tung Tung Tung Sahur', glb:'assets/sahur.glb',     cost:0},
+  {id:'tralalero', name:'Tralalero Tralala 🦈', glb:'assets/tralalero.glb', cost:1500},
+];
+let owned; try{ owned=JSON.parse(localStorage.getItem('br_owned')||'["sahur"]')||['sahur']; }catch(e){ owned=['sahur']; }
+const isOwned=c=>c.id==='sahur'||owned.includes(c.id);
+let curChar=Math.max(0, CHARACTERS.findIndex(c=>c.id===(localStorage.getItem('br_char')||'sahur')));
+let player, modelLoading=false, menuReady=false;
+function revealMenu(){ el('loading').style.display='none'; el('menu').classList.remove('hidden'); menuReady=true; refreshCharUI(); }
+function useModel(g, legs, rotY){ if(player) scene.remove(player); player=g; g.userData={legs, baseRotY:rotY||0}; g.rotation.set(0,rotY||0,0); g.position.set(0,0,0); scene.add(g); modelLoading=false; if(!menuReady) revealMenu(); }
+function loadCharacter(c){ modelLoading=true;
+  new GLTFLoader().load(c.glb,
+    gltf=>{ try{ const g=gltf.scene; const L=[g.getObjectByName('LegL'),g.getObjectByName('LegR')];
+      if(!L[0]||!L[1]){ showErr('legs missing: '+c.id); const fb=buildSahur(); useModel(fb,fb.userData.legs,0); return; }
+      useModel(g, L, Math.PI);   // Blender face +Y → glTF -Z after Y-up; flip to face +Z
+    }catch(e){ showErr('model err: '+e.message); const fb=buildSahur(); useModel(fb,fb.userData.legs,0); } },
+    undefined,
+    err=>{ showErr('load fail '+c.id+(location.protocol==='file:'?' — file:// blocks the model; use the live URL':'')); const fb=buildSahur(); useModel(fb,fb.userData.legs,0); }
+  );
+}
+function refreshCharUI(){ const c=CHARACTERS[curChar]; el('charName').textContent=c.name;
+  if(isOwned(c)){ el('charStatus').textContent='✓ owned'; el('playBtn').textContent='RUN ▶'; }
+  else if(totalCoins>=c.cost){ el('charStatus').textContent='🪙 '+c.cost+' — tap to unlock'; el('playBtn').textContent='UNLOCK 🪙'+c.cost; }
+  else { el('charStatus').textContent='🔒 🪙'+c.cost+' (need '+(c.cost-totalCoins)+' more)'; el('playBtn').textContent='🔒 🪙'+c.cost; }
+}
+function cycleChar(d){ if(modelLoading)return; curChar=(curChar+d+CHARACTERS.length)%CHARACTERS.length; loadCharacter(CHARACTERS[curChar]); refreshCharUI(); }
+function onPlay(){ const c=CHARACTERS[curChar];
+  if(isOwned(c)){ localStorage.setItem('br_char',c.id); startGame(); }
+  else if(totalCoins>=c.cost){ totalCoins-=c.cost; localStorage.setItem('br_coins',totalCoins); owned.push(c.id); localStorage.setItem('br_owned',JSON.stringify(owned)); localStorage.setItem('br_char',c.id); el('mCoins').textContent=totalCoins; refreshCharUI(); }
+}
+loadCharacter(CHARACTERS[curChar]);
 // fake soft shadow
 const shadow=new THREE.Mesh(new THREE.CircleGeometry(0.9,20), new THREE.MeshBasicMaterial({color:0x000000,transparent:true,opacity:0.32}));
 shadow.rotation.x=-Math.PI/2; shadow.position.y=0.02; scene.add(shadow);
@@ -302,7 +331,8 @@ renderer.domElement.addEventListener('touchend',e=>{const t=e.changedTouches[0],
   if(state===MENU){startGame();return;} if(state===OVER)return;
   if(Math.abs(dx)<24&&Math.abs(dy)<24){jump();return;}
   if(Math.abs(dx)>Math.abs(dy))move(dx>0?1:-1); else dy<0?jump():roll(); },{passive:true});
-el('playBtn').onclick=startGame; el('againBtn').onclick=startGame; el('pauseBtn').onclick=togglePause;
+el('playBtn').onclick=onPlay; el('againBtn').onclick=startGame; el('pauseBtn').onclick=togglePause;
+el('prevChar').onclick=()=>cycleChar(-1); el('nextChar').onclick=()=>cycleChar(1);
 function togglePause(){ if(state!==PLAY)return; paused=!paused; el('pauseBtn').textContent=paused?'▶':'⏸'; }
 
 // ============ start / over ============
@@ -312,6 +342,8 @@ function reset(){ clearWorld(); speed=SPEED0; dist=0; coins$=0; tRun=0; shake=0;
   // buildings/dashes reset positions handled continuously
 }
 function startGame(){ ac(); reset(); state=PLAY; paused=false;
+  if(player){ player.rotation.set(0, player.userData.baseRotY||0, 0); player.position.set(0,0,0); }
+  camera.position.set(0, camBase.y, camBase.z);
   el('menu').classList.add('hidden'); el('gameover').classList.add('hidden'); el('hud').classList.remove('hidden'); el('pauseBtn').style.display='block'; }
 const QUIPS=['Tralalero Tralala 🦈','Bombardiro Crocodilo 🐊✈️','Sahur got tung\'d','Lirilì Larilà 🌵','skibidi sahur','Boneca Ambalabu 🐸','Cappuccino Assassino ☕','brainrot certified 🧠'];
 function gameOver(){ state=OVER; shake=1.2; sHit(); totalCoins+=coins$; localStorage.setItem('br_coins',totalCoins);
@@ -401,8 +433,11 @@ function showErr(err){ const d=el('err'); const msg=(err&&err.message)||err&&err
 addEventListener('error', e=>showErr(e.error||e.message));
 addEventListener('unhandledrejection', e=>showErr(e.reason));
 function animate(now){ let dt=(now-last)/1000; last=now; if(dt>0.05)dt=0.05;
-  try{ if(state===PLAY&&!paused) update(dt); renderer.render(scene,camera); }
-  catch(err){ showErr(err); }                 // never let one bad frame freeze the whole game
+  try{
+    if(state===MENU && player){ camera.position.set(0,3.4,-6.8); camera.lookAt(0,1.7,0); player.position.set(0,0,0); player.rotation.y+=dt*0.6; }
+    if(state===PLAY&&!paused) update(dt);
+    renderer.render(scene,camera);
+  } catch(err){ showErr(err); }                 // never let one bad frame freeze the whole game
   requestAnimationFrame(animate); }
 
 el('mBest').textContent=best; el('mCoins').textContent=totalCoins; el('verTag').textContent='BRAINROT RUSH 3D '+GAME_VERSION;
