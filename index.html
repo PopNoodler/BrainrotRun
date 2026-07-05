@@ -85,13 +85,13 @@
   <button class="btn" id="againBtn">RUN AGAIN ▶</button>
 </div>
 
-<div id="verTag">BRAINROT RUSH 3D v10</div>
+<div id="verTag">BRAINROT RUSH 3D v11</div>
 <div id="err" style="position:fixed;left:8px;right:8px;bottom:24px;z-index:30;display:none;background:rgba(120,10,20,.92);color:#fff;font:600 12px monospace;padding:8px 12px;border-radius:8px;white-space:pre-wrap"></div>
 
 <script type="module">
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-const GAME_VERSION='v10';
+const GAME_VERSION='v11';
 const el=id=>document.getElementById(id);
 
 // ============ renderer / scene / camera ============
@@ -241,6 +241,12 @@ loadCharacter(CHARACTERS[curChar]);
 // fake soft shadow
 const shadow=new THREE.Mesh(new THREE.CircleGeometry(0.9,20), new THREE.MeshBasicMaterial({color:0x000000,transparent:true,opacity:0.32}));
 shadow.rotation.x=-Math.PI/2; shadow.position.y=0.02; scene.add(shadow);
+// ---- particle juice (pooled) ----
+const pGeo=new THREE.BoxGeometry(0.2,0.2,0.2); const partPool=[], parts=[];
+for(let i=0;i<90;i++){ const m=new THREE.Mesh(pGeo,new THREE.MeshBasicMaterial({color:0xffffff})); m.visible=false; scene.add(m); partPool.push(m); }
+function burst(x,y,z,n,color,spd,up){ for(let i=0;i<n;i++){ const m=partPool.pop(); if(!m)break; m.visible=true; m.material.color.setHex(color); m.position.set(x,y,z); m.scale.setScalar(1);
+  const a=Math.random()*6.283, e=Math.random(); parts.push({m, vx:Math.cos(a)*spd*(0.5+e), vy:(up||0.6)*spd*(0.4+Math.random()), vz:Math.sin(a)*spd*(0.5+e), life:0.45+Math.random()*0.35}); } }
+function updateParts(dt){ for(let i=parts.length-1;i>=0;i--){ const p=parts[i]; p.m.position.x+=p.vx*dt; p.m.position.y+=p.vy*dt; p.m.position.z+=(p.vz-speed)*dt; p.vy-=34*dt; p.life-=dt; p.m.scale.setScalar(Math.max(0.02,p.life*2.2)); if(p.life<=0){ p.m.visible=false; partPool.push(p.m); parts.splice(i,1); } } }
 
 // ============ obstacle + coin materials/pools ============
 const trainMats=[0xd63b57,0x3b7bd6,0xf0a83b,0x46c24d,0x8a5cff].map(c=>new THREE.MeshLambertMaterial({color:c}));
@@ -315,11 +321,11 @@ const sCoin=()=>tone(880,0.07,'square',0.09,1320), sJump=()=>tone(420,0.13,'sine
   sHit=()=>{tone(180,0.3,'sawtooth',0.2,60);setTimeout(()=>tone(90,0.4,'sawtooth',0.16,50),80);};
 const sPow=()=>{tone(660,0.09,'square',0.12,1320);setTimeout(()=>tone(1040,0.12,'square',0.1,1560),75);};
 const sShield=()=>tone(300,0.28,'sine',0.17,900);
-function activatePU(t){ if(t==='magnet')pMag=8; else if(t==='x2')pX2=10; else if(t==='shield')pShield=true; sPow(); }
+function activatePU(t){ if(t==='magnet')pMag=8; else if(t==='x2')pX2=10; else if(t==='shield')pShield=true; sPow(); burst(P.x,1.6,0,14,PU_COL[t],7,1.0); }
 
 // ============ input ============
 function move(d){ if(state!==PLAY||paused)return; const t=Math.max(0,Math.min(2,P.lane+d)); if(t!==P.lane){P.lane=t;sLane();} }
-function doJump(){ P.vy=JUMPV; P.grounded=false; coyoteT=0; jumpBufT=0; P.roll=0; sJump(); }
+function doJump(){ P.vy=JUMPV; P.grounded=false; coyoteT=0; jumpBufT=0; P.roll=0; sJump(); burst(P.x,P.y+0.2,0,7,0xcfd0dd,3,0.5); }
 function jump(){ if(state!==PLAY||paused)return; if(P.roll>0)return;
   if(P.grounded||coyoteT>0) doJump(); else jumpBufT=0.14; }   // buffer if pressed a touch early
 function roll(){ if(state!==PLAY||paused)return; if(!P.grounded){ P.vy=-JUMPV*0.9; } P.roll=0.55; sRoll(); }
@@ -349,7 +355,7 @@ function startGame(){ ac(); reset(); state=PLAY; paused=false;
   camera.position.set(0, camBase.y, camBase.z);
   el('menu').classList.add('hidden'); el('gameover').classList.add('hidden'); el('hud').classList.remove('hidden'); el('pauseBtn').style.display='block'; }
 const QUIPS=['Tralalero Tralala 🦈','Bombardiro Crocodilo 🐊✈️','Sahur got tung\'d','Lirilì Larilà 🌵','skibidi sahur','Boneca Ambalabu 🐸','Cappuccino Assassino ☕','brainrot certified 🧠'];
-function gameOver(){ state=OVER; shake=1.2; sHit(); totalCoins+=coins$; localStorage.setItem('br_coins',totalCoins);
+function gameOver(){ state=OVER; shake=1.2; sHit(); burst(P.x,P.y+1.2,0,26,0xff7a3d,9,0.9); burst(P.x,P.y+1.2,0,16,0xffe14d,7,0.9); totalCoins+=coins$; localStorage.setItem('br_coins',totalCoins);
   if(dist>best){best=Math.floor(dist);localStorage.setItem('br_best',best);}
   el('goDist').textContent=Math.floor(dist)+' m'; el('goCoins').textContent=coins$; el('goBest').textContent=best+' m';
   el('goQuip').textContent=QUIPS[(Math.random()*QUIPS.length)|0];
@@ -370,7 +376,7 @@ function update(dt){
     const dxl=Math.abs(P.x-laneOf(o.lane)); if(dxl>1.2)continue;
     if(o.z<=0.5 && o.z2>=-0.5){ if(P.y >= o.top-0.5) support=Math.max(support,o.top); }
   }
-  if(P.y<=support){ if(P.vy<-0.1&&!P.grounded)sLand(); P.y=support; P.vy=0; P.grounded=true; } else P.grounded=false;
+  if(P.y<=support){ if(P.vy<-0.1&&!P.grounded){ sLand(); burst(P.x,P.y+0.1,0,6,0xd8d8e0,3.5,0.4); } P.y=support; P.vy=0; P.grounded=true; } else P.grounded=false;
   // coyote time + buffered jump for responsive controls
   if(P.grounded){ coyoteT=0.10; if(jumpBufT>0 && P.roll<=0) doJump(); } else if(coyoteT>0) coyoteT-=dt;
   if(jumpBufT>0) jumpBufT-=dt;
@@ -394,11 +400,11 @@ function update(dt){
   // magnet: vacuum nearby coins toward the player
   if(pMag>0){ for(const c of coins){ if(c.got||c.z>15||c.z<-3) continue;
     c.mesh.position.x += (P.x - c.mesh.position.x)*Math.min(1,dt*7);
-    if(Math.abs(c.z)<2.4 && Math.abs(c.mesh.position.x-P.x)<1.4){ c.got=true; coins$+=pX2>0?2:1; sCoin(); scene.remove(c.mesh); } } }
+    if(Math.abs(c.z)<2.4 && Math.abs(c.mesh.position.x-P.x)<1.4){ c.got=true; coins$+=pX2>0?2:1; sCoin(); burst(c.mesh.position.x,c.mesh.position.y,c.z,4,0xffe14d,3.2,0.6); scene.remove(c.mesh); } } }
   // coin collect (normal)
   for(const c of coins){ if(c.got)continue;
     if(Math.abs(c.z)<1.1 && Math.abs(P.x-laneOf(c.lane))<1.1 && Math.abs((P.y+1.1)-c.y)<1.6){
-      c.got=true; coins$+=pX2>0?2:1; sCoin(); scene.remove(c.mesh);
+      c.got=true; coins$+=pX2>0?2:1; sCoin(); burst(c.mesh.position.x,c.mesh.position.y,c.z,4,0xffe14d,3.2,0.6); scene.remove(c.mesh);
     }
   }
   // power-up collect
@@ -442,6 +448,7 @@ function animate(now){ let dt=(now-last)/1000; last=now; if(dt>0.05)dt=0.05;
   try{
     if(state===MENU && player){ camera.position.set(0,3.4,-6.8); camera.lookAt(0,1.7,0); player.position.set(0,0,0); player.rotation.y+=dt*0.6; }
     if(state===PLAY&&!paused) update(dt);
+    if(!paused) updateParts(dt);
     renderer.render(scene,camera);
   } catch(err){ showErr(err); }                 // never let one bad frame freeze the whole game
   requestAnimationFrame(animate); }
