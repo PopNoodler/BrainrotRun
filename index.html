@@ -94,19 +94,20 @@
   <button class="btn" id="againBtn">RUN AGAIN ▶</button>
 </div>
 
-<div id="verTag">BRAINROT RUSH 3D v17</div>
+<div id="verTag">BRAINROT RUSH 3D v18</div>
 <div id="err" style="position:fixed;left:8px;right:8px;bottom:24px;z-index:30;display:none;background:rgba(120,10,20,.92);color:#fff;font:600 12px monospace;padding:8px 12px;border-radius:8px;white-space:pre-wrap"></div>
 
 <script type="module">
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-const GAME_VERSION='v17';
+const GAME_VERSION='v18';
 const el=id=>document.getElementById(id);
 
 // ============ renderer / scene / camera ============
 const renderer=new THREE.WebGLRenderer({antialias:true,powerPreference:'high-performance'});
 renderer.setPixelRatio(Math.min(2,devicePixelRatio||1));
 renderer.setSize(innerWidth,innerHeight);
+renderer.toneMapping=THREE.ACESFilmicToneMapping; renderer.toneMappingExposure=1.15;   // richer, filmic color response
 document.body.appendChild(renderer.domElement);
 const scene=new THREE.Scene();
 scene.background=new THREE.Color(0x2a1c4a);
@@ -119,6 +120,7 @@ addEventListener('resize',()=>{ camera.aspect=innerWidth/innerHeight; camera.upd
 // lights
 scene.add(new THREE.HemisphereLight(0xbfd4ff,0x33244a,1.05));
 const sun=new THREE.DirectionalLight(0xfff3d0,1.25); sun.position.set(-8,20,6); scene.add(sun);
+const rim=new THREE.DirectionalLight(0x88bbff,0.7); rim.position.set(7,9,-14); scene.add(rim);   // cool back rim to pop silhouettes
 
 // ============ constants ============
 const LANEX=2.4, SPEED0=22, SPEEDMAX=64, GRAV=85, JUMPV=27;
@@ -352,7 +354,7 @@ function pickType(){ const d=diffOf(), r=Math.random();   // early: roof-friendl
 
 // ============ game state ============
 const MENU=0,PLAY=1,OVER=2; let state=MENU, paused=false;
-let speed=SPEED0, dist=0, coins$=0, tRun=0, shake=0;
+let speed=SPEED0, dist=0, coins$=0, tRun=0, shake=0, lastMile=0;
 let pMag=0, pX2=0, pShield=false, pInv=0, pHover=0;   // magnet timer, 2x timer, shield flag, post-shield invuln, hoverboard timer
 let combo=0, comboT=0, roofT=0;             // coin-combo streak, its decay timer, roof-surf accumulator
 let runSurf=0, runNear=0, runMaxMult=1;     // per-run mission stats (surfs, near-misses, best combo mult)
@@ -431,7 +433,7 @@ el('prevChar').onclick=()=>cycleChar(-1); el('nextChar').onclick=()=>cycleChar(1
 function togglePause(){ if(state!==PLAY)return; paused=!paused; el('pauseBtn').textContent=paused?'▶':'⏸'; }
 
 // ============ start / over ============
-function reset(){ clearWorld(); speed=SPEED0; dist=0; coins$=0; tRun=0; shake=0; lastOpen=1; nextZ=40;
+function reset(){ clearWorld(); speed=SPEED0; dist=0; coins$=0; tRun=0; shake=0; lastMile=0; lastOpen=1; nextZ=40;
   pMag=0; pX2=0; pShield=false; pInv=0; pHover=0; coyoteT=0; jumpBufT=0; combo=0; comboT=0; roofT=0;
   runSurf=0; runNear=0; runMaxMult=1; biomeIdx=-1; el('pups').textContent='';
   P.lane=1; P.x=0; P.y=0; P.vy=0; P.roll=0; P.grounded=true;
@@ -452,6 +454,7 @@ function gameOver(){ state=OVER; shake=1.2; sHit(); burst(P.x,P.y+1.2,0,26,0xff7
 // ============ update ============
 function update(dt){
   tRun+=dt; speed=Math.min(SPEEDMAX, SPEED0+dist*0.02); dist+=speed*dt;
+  while(dist>=lastMile+500){ lastMile+=500; coins$+=50; popup(P.x,3.9,0,lastMile+'m! 🎉','#ffe14d'); burst(P.x,2.2,0,12,0xffe14d,7,0.9); sPow(); }  // distance milestone reward
   // lane lerp
   const tx2=laneOf(P.lane); P.x+=(tx2-P.x)*Math.min(1,dt*13);
   // roll timer
