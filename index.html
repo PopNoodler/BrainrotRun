@@ -133,12 +133,12 @@
   <button class="btn" id="againBtn">RUN AGAIN ▶</button>
 </div>
 
-<div id="verTag">BRAINROT RUSH 3D v26</div>
+<div id="verTag">BRAINROT RUSH 3D v27</div>
 <div id="err" style="position:fixed;left:8px;right:8px;bottom:24px;z-index:30;display:none;background:rgba(120,10,20,.92);color:#fff;font:600 12px monospace;padding:8px 12px;border-radius:8px;white-space:pre-wrap"></div>
 
 <script type="module">
 import * as THREE from 'three';
-const GAME_VERSION='v26';
+const GAME_VERSION='v27';
 const el=id=>document.getElementById(id);
 
 // ============ renderer / scene / camera ============
@@ -454,8 +454,9 @@ function spawnRow(z){
       lastOpen=(blk!==lastOpen)?lastOpen:[lastOpen-1,lastOpen+1].filter(l=>l>=0&&l<3)[0];
     }
   } else { // coin run along the safe lane
-    const L=Math.random()<0.6?lastOpen:(Math.random()*3)|0, n=5+((Math.random()*4)|0), hi=Math.random()<0.3;
-    for(let i=0;i<n;i++) addCoin(L, z+i*2.4, hi?3.1:1.1);
+    const L=Math.random()<0.6?lastOpen:(Math.random()*3)|0, n=5+((Math.random()*4)|0);
+    if(Math.random()<0.34){ for(let i=0;i<n;i++) addCoin(L, z+i*2.2, 1.1+Math.sin(i/(n-1)*Math.PI)*3.0); }  // jump-arc trail: peaks at 4.1, collected mid-jump — teaches & rewards jumping
+    else { const hi=Math.random()<0.25; for(let i=0;i<n;i++) addCoin(L, z+i*2.4, hi?3.1:1.1); }
     if(Math.random()<0.28){ const t=['magnet','shield','x2','hover'][(Math.random()*4)|0]; addPowerup(t, L, z+n*2.4+2.5); }  // reward at the end of a coin run
   }
 }
@@ -611,14 +612,14 @@ function gameOver(){ state=OVER; shake=1.2; stopMusic(); sHit(); burst(P.x,P.y+1
 
 // ============ update ============
 function update(dt){
-  tRun+=dt; speed=Math.min(SPEEDMAX, SPEED0+dist*0.02); dist+=speed*dt;
+  tRun+=dt; speed=Math.min(SPEEDMAX, SPEED0+dist*0.03); dist+=speed*dt;   // peak speed at ~1400m, matching the difficulty curve
   while(dist>=lastMile+500){ lastMile+=500; coins$+=50; popup(P.x,3.9,0,lastMile+'m! 🎉','#ffe14d'); burst(P.x,2.2,0,12,0xffe14d,7,0.9); sPow(); }  // distance milestone reward
   // lane lerp
   const tx2=laneOf(P.lane); P.x+=(tx2-P.x)*Math.min(1,dt*13);
   // roll timer
   if(P.roll>0)P.roll-=dt;
   // vertical physics
-  P.vy-=GRAV*dt; P.y+=P.vy*dt;
+  P.vy-=(P.vy>0?GRAV:GRAV*1.5)*dt; P.y+=P.vy*dt;   // fast-fall: heavier gravity on descent kills float (air time 0.64s→0.58s, apex 4.29 still clears trains)
   // support height: ground or top of an obstacle we're standing over (same lane region, within z span)
   let support=0;
   for(const o of obstacles){ if(o.type==='over')continue;
