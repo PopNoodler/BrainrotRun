@@ -139,12 +139,12 @@
   <button class="btn" id="againBtn">RUN AGAIN ▶</button>
 </div>
 
-<div id="verTag">BRAINROT RUSH 3D v43</div>
+<div id="verTag">BRAINROT RUSH 3D v44</div>
 <div id="err" style="position:fixed;left:8px;right:8px;bottom:24px;z-index:30;display:none;background:rgba(120,10,20,.92);color:#fff;font:600 12px monospace;padding:8px 12px;border-radius:8px;white-space:pre-wrap"></div>
 
 <script type="module">
 import * as THREE from 'three';
-const GAME_VERSION='v43';
+const GAME_VERSION='v44';
 const el=id=>document.getElementById(id);
 
 // ============ renderer / scene / camera ============
@@ -581,7 +581,9 @@ function buyUpg(id){ const u=UPGRADES.find(x=>x.id===id); if(!u||UPG[id]>=u.max)
   sPow(); el('mCoins').textContent=totalCoins; renderShop(); }
 
 // ============ audio ============
-let AC=null,muted=localStorage.getItem('br_mute')==='1'; const ac=()=>{ if(!AC){try{AC=new (AudioContext||webkitAudioContext)()}catch(e){}} return AC; };
+let AC=null; const ac=()=>{ if(!AC){try{AC=new (AudioContext||webkitAudioContext)()}catch(e){}} return AC; };
+let soundMode=+localStorage.getItem('br_sound'); if(isNaN(soundMode)) soundMode = localStorage.getItem('br_mute')==='1'?2:0;   // 0 all · 1 music-off (SFX on) · 2 silent
+let muted=(soundMode===2), musicOff=(soundMode>=1);
 function tone(f,d,t,v,s){ if(muted)return; const a=ac(); if(!a)return; const o=a.createOscillator(),g=a.createGain();
   o.type=t||'square'; o.frequency.value=f; if(s)o.frequency.exponentialRampToValueAtTime(s,a.currentTime+d);
   g.gain.value=v||0.12; g.gain.exponentialRampToValueAtTime(0.0001,a.currentTime+d); o.connect(g);g.connect(a.destination);o.start();o.stop(a.currentTime+d); }
@@ -597,13 +599,15 @@ function playMus(f,d,type,v,t){ const a=ac(); if(!a)return; const o=a.createOsci
   o.type=type; o.frequency.value=f; g.gain.setValueAtTime(0.0001,t); g.gain.linearRampToValueAtTime(v,t+0.02); g.gain.exponentialRampToValueAtTime(0.0001,t+d);
   o.connect(g); g.connect(a.destination); o.start(t); o.stop(t+d+0.05); }
 const MTUNE=[0,3,-2,5];   // per-biome transpose (Città / Tramonto / Notte Neon / Foresta) so music evolves with the world
-function musicTick(){ if(muted){return;} const a=ac(); if(!a)return; const t=a.currentTime+0.03;
+function musicTick(){ if(muted||musicOff){return;} const a=ac(); if(!a)return; const t=a.currentTime+0.03;
   const step=musStep%16, bar=(musStep/16|0)%MBASS.length, tune=MTUNE[Math.max(0,biomeIdx)%MTUNE.length], root=MROOT*Math.pow(2,(MBASS[bar]+tune)/12);
   if(step%4===0) playMus(root/2,0.34,'triangle',0.09,t);                                   // bass on quarters
   if(step%2===0) playMus(root*Math.pow(2,MSCALE[(step/2)%MSCALE.length]/12),0.17,'square',0.035,t); // arp on 8ths
   musStep++; }
-function startMusic(){ if(musIntv||muted)return; musStep=0; musIntv=setInterval(musicTick,150); }  // 100bpm 16ths
+function startMusic(){ if(musIntv||muted||musicOff)return; musStep=0; musIntv=setInterval(musicTick,150); }  // 100bpm 16ths
 function stopMusic(){ if(musIntv){ clearInterval(musIntv); musIntv=null; } }
+function applySound(){ muted=(soundMode===2); musicOff=(soundMode>=1); el('muteBtn').textContent=['🔊','🔈','🔇'][soundMode];
+  if(muted||musicOff) stopMusic(); else if(state===PLAY&&!paused){ ac(); startMusic(); } }
 function screenFlash(hex){ const f=el('flash'); if(!f)return; f.style.background='#'+hex.toString(16).padStart(6,'0');
   f.style.transition='none'; f.style.opacity='0.28'; requestAnimationFrame(()=>{ f.style.transition='opacity .35s'; f.style.opacity='0'; }); }
 function activatePU(t){ if(t==='magnet')pMag=8+UPG.magnet*2; else if(t==='x2')pX2=10; else if(t==='shield')pShield=true; else if(t==='hover')pHover=10+UPG.hover*2; sPow(); screenFlash(PU_COL[t]); burst(P.x,1.6,0,14,PU_COL[t],7,1.0); }
@@ -637,9 +641,8 @@ el('shopBtn').onclick=()=>{ renderShop(); el('menu').classList.add('hidden'); el
 el('shopBack').onclick=()=>{ el('shop').classList.add('hidden'); el('menu').classList.remove('hidden'); refreshCharUI(); };
 el('dailyBtn').onclick=claimDaily;
 el('tutGo').onclick=()=>{ localStorage.setItem('br_tut','1'); el('tut').classList.add('hidden'); };
-el('muteBtn').textContent=muted?'🔇':'🔊';
-el('muteBtn').onclick=()=>{ muted=!muted; localStorage.setItem('br_mute',muted?'1':'0'); el('muteBtn').textContent=muted?'🔇':'🔊';
-  if(muted)stopMusic(); else { ac(); if(state===PLAY&&!paused)startMusic(); } };
+el('muteBtn').textContent=['🔊','🔈','🔇'][soundMode];
+el('muteBtn').onclick=()=>{ soundMode=(soundMode+1)%3; localStorage.setItem('br_sound',soundMode); applySound(); };
 function togglePause(){ if(state!==PLAY)return; paused=!paused; el('pauseBtn').textContent=paused?'▶':'⏸'; if(paused)stopMusic(); else startMusic(); }
 
 // ============ start / over ============
