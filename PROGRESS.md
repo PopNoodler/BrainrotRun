@@ -31,3 +31,14 @@ Single-file HTML5 canvas PWA at `C:\Users\adamt\BrainrotRun`. Built with the
 - Real art pass on Sahur + obstacles; brainrot voice/soundbites.
 - Monetization (portal SDK: rewarded revive + 2× coins; interstitial on game over).
 - Deploy to GitHub Pages + submit to CrazyGames (same loose-files flow as Splash Hero).
+
+## Overnight session (2026-07-05) — v12→v18
+- **v12** Difficulty curve: diffOf()=min(1,dist/1400); diff-scaled obstacle mix (early train/truck, late barriers), variable-length trains (14/22) with length-scaled roof coins, ramping 2-block density.
+- **v13** Risk-reward scoring: coin-combo multiplier x1→x5, near-miss bonus (adjacent-lane train pass), roof-surf bonus, floating DOM score popups, 🔥 combo HUD.
+- **v14** Roster: +Bombardiro Crocodilo 🐊✈️ (Blender-authored GLB, 3000 coins).
+- **v15** Daily missions: 3 rotating goals (dist/coins/surf/near/combo/runs) w/ coin rewards + progress bars, auto-reroll.
+- **v16** Biomes: 4 environments (Città/Tramonto/Notte Neon/Foresta) shift bg/fog/ground/building colors every 600m.
+- **v17** Hoverboard 🛹 power-up: 10s plow-through invincibility + board mesh.
+- **v18** Render polish (ACES tone mapping + rim light) + distance milestones (+50 coins/500m).
+
+All verified structurally (node --check module + el-id/feature checks) and deployed to https://popnoodler.github.io/BrainrotRun/
