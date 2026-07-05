@@ -33,6 +33,7 @@
   #goTitle{font-size:clamp(30px,9vw,54px);font-weight:900;color:#ff5b6b;text-shadow:0 3px 0 rgba(0,0,0,.3)}
   .goRow{display:flex;justify-content:space-between;width:min(88vw,340px);padding:9px 4px;border-bottom:1px solid rgba(255,255,255,.12);font-weight:800}
   .goRow b{color:#ffe14d}
+  #combovig{position:fixed;inset:0;pointer-events:none;z-index:4;opacity:0;transition:opacity .3s;box-shadow:inset 0 0 130px 34px rgba(255,110,30,.6)}
   #pauseBtn{position:fixed;top:max(12px,env(safe-area-inset-top));right:12px;z-index:6;width:40px;height:40px;border-radius:50%;
     border:1px solid rgba(255,255,255,.25);background:rgba(20,24,44,.7);color:#fff;font-size:16px;cursor:pointer;pointer-events:auto;display:none}
   #muteBtn{position:fixed;top:max(12px,env(safe-area-inset-top));right:60px;z-index:12;width:40px;height:40px;border-radius:50%;
@@ -78,6 +79,7 @@
 <div id="loading">loading brainrot… 🧠</div>
 <button id="pauseBtn">⏸</button>
 <button id="muteBtn">🔊</button>
+<div id="combovig"></div>
 
 <div id="hud" class="hidden">
   <div id="scoreBox">0 <small>M</small></div>
@@ -133,12 +135,12 @@
   <button class="btn" id="againBtn">RUN AGAIN ▶</button>
 </div>
 
-<div id="verTag">BRAINROT RUSH 3D v33</div>
+<div id="verTag">BRAINROT RUSH 3D v34</div>
 <div id="err" style="position:fixed;left:8px;right:8px;bottom:24px;z-index:30;display:none;background:rgba(120,10,20,.92);color:#fff;font:600 12px monospace;padding:8px 12px;border-radius:8px;white-space:pre-wrap"></div>
 
 <script type="module">
 import * as THREE from 'three';
-const GAME_VERSION='v33';
+const GAME_VERSION='v34';
 const el=id=>document.getElementById(id);
 
 // ============ renderer / scene / camera ============
@@ -619,7 +621,7 @@ function startGame(){ ac(); reset(); state=PLAY; paused=false;
   el('menu').classList.add('hidden'); el('gameover').classList.add('hidden'); el('hud').classList.remove('hidden'); el('pauseBtn').style.display='block'; startMusic(); }
 const QUIPS=['Tralalero Tralala 🦈','Bombardiro Crocodilo 🐊✈️','Sahur got tung\'d','Lirilì Larilà 🌵','skibidi sahur','Boneca Ambalabu 🐸','Cappuccino Assassino ☕','brainrot certified 🧠'];
 function die(){ if(state!==PLAY)return; state=DYING; deathT=0; deathVy=15; deathSpin=(P.x<0?1:-1)*7; shake=1.4; stopMusic(); sHit();
-  if(player) player.scale.set(1,1,1);
+  if(player) player.scale.set(1,1,1); el('combovig').style.opacity=0;
   burst(P.x,P.y+1.2,0,26,0xff7a3d,9,0.9); burst(P.x,P.y+1.2,0,16,0xffe14d,7,0.9); }
 function deathTick(dt){ deathT+=dt; deathVy-=55*dt; P.y+=deathVy*dt;
   if(player){ player.position.y=P.y; player.rotation.x+=deathSpin*dt; player.rotation.z+=deathSpin*0.5*dt; }
@@ -738,6 +740,7 @@ function update(dt){
   el('scoreBox').innerHTML=Math.floor(dist)+' <small>M</small>'; el('coinBox').textContent='🪙 '+coins$;
   if(coinPulse>0)coinPulse-=dt; el('coinBox').style.transform='scale('+(1+Math.max(0,coinPulse)*1.6)+')';
   const cm=comboMult();
+  el('combovig').style.opacity = cm>1 ? Math.min(0.85,(cm-1)*0.26) : 0;   // fire-glow intensifies with the combo multiplier
   el('pups').textContent=(cm>1?'🔥x'+cm+' ':'')+(pHover>0?'🛹 '+Math.ceil(pHover)+' ':'')+(pShield?'🛡️ ':'')+(pMag>0?'🧲 '+Math.ceil(pMag)+' ':'')+(pX2>0?'✖️2 '+Math.ceil(pX2):'');
 }
 
