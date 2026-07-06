@@ -30,7 +30,8 @@ ELE=mat('ele',(0.35,0.63,0.31)); TUSK=mat('tusk',(0.95,0.93,0.87)); SKIN=mat('sk
 TIRE=mat('tire',(0.08,0.08,0.09)); TREAD=mat('tread',(0.03,0.03,0.04)); HUB=mat('hub',(0.57,0.58,0.63))
 FROG=mat('frog',(0.35,0.63,0.23)); FROGB=mat('frogB',(0.82,0.83,0.53)); SHOE=mat('shoe',(0.14,0.13,0.17))
 
-def T(x,y,z): return (x, -z, y)          # three.js (Y-up, faces +Z) -> Blender (Z-up, faces -Y)
+OFFX=0.0
+def T(x,y,z): return (x+OFFX, -z, y)     # three.js (Y-up, faces +Z) -> Blender (Z-up, faces -Y); OFFX spaces a lineup
 def setm(o,m): o.data.materials.clear(); o.data.materials.append(m)
 def sph(r,loc,sc=None,m=WOOD):
     bpy.ops.mesh.primitive_uv_sphere_add(radius=r,location=T(*loc)); o=bpy.context.active_object
@@ -152,18 +153,25 @@ def build_boneca():
     for s in (-1,1):
         cyl(0.15,0.7,(s*0.26,0.5,0),SKIN); box(0.28,0.18,0.55,(s*0.26,0.1,0.14),SHOE)
 
-{'sahur':build_sahur,'tralalero':build_tralalero,'bombardiro':build_bombardiro,'lirili':build_lirili,'boneca':build_boneca}.get(NAME, build_sahur)()
+BUILDS={'sahur':build_sahur,'tralalero':build_tralalero,'bombardiro':build_bombardiro,'lirili':build_lirili,'boneca':build_boneca}
+if NAME=='lineup':
+    for nm,ox in [('sahur',-6.4),('tralalero',-3.2),('bombardiro',0),('lirili',3.2),('boneca',6.4)]:
+        OFFX=ox; BUILDS[nm]()
+    OFFX=0
+else:
+    BUILDS.get(NAME, build_sahur)()
 
 # ---- camera (track-to target) + light + workbench render ----
+LINE = NAME=='lineup'
 bpy.ops.object.empty_add(location=(0,0,1.4)); tgt=bpy.context.active_object
-bpy.ops.object.camera_add(location=(4.2,-5.6,2.4)); cam=bpy.context.active_object
+bpy.ops.object.camera_add(location=(0,-19,3.2) if LINE else (4.2,-5.6,2.4)); cam=bpy.context.active_object
 tc=cam.constraints.new('TRACK_TO'); tc.target=tgt; tc.track_axis='TRACK_NEGATIVE_Z'; tc.up_axis='UP_Y'
-cam.data.lens=52; bpy.context.scene.camera=cam
+cam.data.lens=42 if LINE else 52; bpy.context.scene.camera=cam
 bpy.ops.object.light_add(type='SUN',location=(-4,-6,9)); bpy.context.active_object.data.energy=3.2
 sc=bpy.context.scene
 sc.render.engine='BLENDER_WORKBENCH'
 sc.display.shading.light='STUDIO'; sc.display.shading.color_type='MATERIAL'
-sc.render.resolution_x=400; sc.render.resolution_y=460
+sc.render.resolution_x=1100 if LINE else 400; sc.render.resolution_y=360 if LINE else 460
 sc.world=bpy.data.worlds.new('w'); sc.world.use_nodes=True
 sc.world.node_tree.nodes['Background'].inputs['Color'].default_value=(0.16,0.11,0.29,1)
 root=None

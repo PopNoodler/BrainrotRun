@@ -153,12 +153,12 @@
   <button class="btn2" id="quitBtn">🏠 QUIT TO MENU</button>
 </div>
 
-<div id="verTag">BRAINROT RUSH 3D v62</div>
+<div id="verTag">BRAINROT RUSH 3D v63</div>
 <div id="err" style="position:fixed;left:8px;right:8px;bottom:24px;z-index:30;display:none;background:rgba(120,10,20,.92);color:#fff;font:600 12px monospace;padding:8px 12px;border-radius:8px;white-space:pre-wrap"></div>
 
 <script type="module">
 import * as THREE from 'three';
-const GAME_VERSION='v62';
+const GAME_VERSION='v63';
 const el=id=>document.getElementById(id);
 const setLS=(k,v)=>{ try{ localStorage.setItem(k,v); }catch(e){} };   // safe write (Safari private mode throws on setItem)
 const reduceMotion=(()=>{ try{ return matchMedia('(prefers-reduced-motion: reduce)').matches; }catch(e){ return false; } })();   // a11y: damp shake + FOV kick
@@ -320,7 +320,7 @@ function buildTralalero(){ const g=new THREE.Group();
   eyePair(g, null, 0.33, 2.0, 0.66, 0.14);
   const dorsal=part(new THREE.ConeGeometry(0.48,1.0,4), CM.blue, 0,2.45,-0.1); dorsal.scale.set(0.28,1,1); g.add(dorsal);
   const tail=part(new THREE.ConeGeometry(0.6,1.1,4), CM.blue, 0,1.9,-1.6); tail.scale.set(0.24,1.15,1); g.add(tail);
-  for(const s of [-1,1]){ const f=part(new THREE.ConeGeometry(0.4,0.9,4), CM.blue, s*0.62,1.5,0.3); f.scale.set(0.22,1,0.85); f.rotation.set(Math.PI/2,0,s*0.6); g.add(f); }
+  for(const s of [-1,1]){ const f=part(new THREE.ConeGeometry(0.4,0.9,4), CM.blue, s*0.62,1.55,0.25); f.scale.set(0.9,1,0.22); f.rotation.set(0.2,0,s*1.35); g.add(f); }   // pectoral fins swept OUT sideways (not up)
   g.userData={legs:legPair(g, CM.blue, CM.sneaker, 0.32, 0.72, 0.18)}; return g;
 }
 // -- Bombardiro Crocodilo: green croc-headed bomber --
