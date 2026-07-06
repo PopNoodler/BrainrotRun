@@ -39,6 +39,17 @@
   #flash{position:fixed;inset:0;pointer-events:none;z-index:8;opacity:0;background:#fff}
   #combobar{position:fixed;top:max(80px,calc(env(safe-area-inset-top) + 68px));left:50%;transform:translateX(-50%);width:124px;height:5px;border-radius:99px;background:rgba(255,255,255,.16);overflow:hidden;z-index:5;opacity:0;transition:opacity .2s;pointer-events:none}
   #zone{position:fixed;top:20%;left:0;right:0;text-align:center;font-size:clamp(20px,6.5vw,42px);font-weight:900;z-index:6;pointer-events:none;opacity:0;transform:scale(.9);transition:opacity .35s,transform .35s;text-shadow:0 3px 14px rgba(0,0,0,.75);letter-spacing:1px}
+  #charGrid{display:flex;gap:6px;justify-content:center;margin-top:10px;flex-wrap:wrap}
+  .cg{position:relative;width:46px;height:46px;border-radius:12px;border:2px solid rgba(255,255,255,.22);background:rgba(25,20,50,.65);font-size:22px;cursor:pointer;padding:0}
+  .cgSel{border-color:#ffe14d;box-shadow:0 0 10px rgba(255,225,77,.5)}
+  .cgLock{filter:grayscale(.85);opacity:.72}
+  .cgPrice{position:absolute;bottom:-7px;left:0;right:0;font-size:9px;font-weight:900;color:#ffe14d;text-shadow:0 1px 3px #000}
+  #lvlRow{display:flex;align-items:center;gap:9px;margin-top:12px;font-weight:900;font-size:14px;color:#c9a4ff}
+  #lvlBar{width:130px;height:7px;border-radius:99px;background:rgba(255,255,255,.14);overflow:hidden}
+  #lvlFill{height:100%;width:0%;background:linear-gradient(90deg,#8a5cff,#c9a4ff);border-radius:99px;transition:width .4s}
+  .menuRow{display:flex;gap:10px}
+  #trophyList{width:min(92vw,420px);display:flex;flex-direction:column;gap:7px;margin:14px 0;max-height:56vh;overflow-y:auto}
+  #trophies{background:radial-gradient(120% 90% at 50% 22%,rgba(140,100,30,.4),rgba(8,10,26,.95))}
   #combofill{height:100%;width:100%;background:linear-gradient(90deg,#ffe14d,#ff5b3d);border-radius:99px}
   #pauseBtn{position:fixed;top:max(12px,env(safe-area-inset-top));right:12px;z-index:6;width:40px;height:40px;border-radius:50%;
     border:1px solid rgba(255,255,255,.25);background:rgba(20,24,44,.7);color:#fff;font-size:16px;cursor:pointer;pointer-events:auto;display:none}
@@ -104,14 +115,16 @@
     <div class="charbox"><div id="charName" class="subtitle">Tung Tung Tung Sahur</div><div id="charStatus" class="charstat">✓ owned</div></div>
     <button id="nextChar" class="arrow">▶</button>
   </div>
+  <div id="charGrid"></div>
   <div class="stats">
     <div class="stat"><b id="mBest">0</b><span>best (m)</span></div>
     <div class="stat"><b id="mCoins">0</b><span>coins</span></div>
   </div>
+  <div id="lvlRow"><b id="lvlNum">🧠 LVL 1</b><div id="lvlBar"><div id="lvlFill"></div></div></div>
   <button class="btn2" id="dailyBtn" style="display:none;background:linear-gradient(180deg,#ffd24d,#ff9d3d);color:#0a0e1a;border:none">🎁 DAILY BONUS</button>
   <div id="missions"></div>
   <button class="btn" id="playBtn">RUN ▶</button>
-  <button class="btn2" id="shopBtn">🛒 UPGRADES</button>
+  <div class="menuRow"><button class="btn2" id="shopBtn">🛒 UPGRADES</button><button class="btn2" id="trophyBtn">🏆 TROPHIES</button></div>
   <button class="btn2" id="installBtn" style="display:none">📲 INSTALL APP</button>
   <div class="hint">⬅️ ➡️ / swipe lanes · ⬆️ jump (land on trains!) · ⬇️ roll<br><span class="brl">tralalero</span> <span class="brm">tralala</span> 🦈</div>
 </div>
@@ -121,6 +134,12 @@
   <div id="shopCoins" class="charstat" style="font-size:15px">🪙 0</div>
   <div id="shopList"></div>
   <button class="btn" id="shopBack">◀ BACK</button>
+</div>
+
+<div class="overlay hidden" id="trophies">
+  <div class="title" style="font-size:clamp(26px,7vw,42px)">🏆 TROPHIES</div>
+  <div id="trophyList"></div>
+  <button class="btn" id="trophyBack">◀ BACK</button>
 </div>
 
 <div class="overlay hidden" id="tut">
@@ -141,6 +160,7 @@
     <div class="goRow"><span>Distance</span><b id="goDist">0 m</b></div>
     <div class="goRow"><span>Coins</span><b id="goCoins">0</b></div>
     <div class="goRow"><span>Best</span><b id="goBest">0 m</b></div>
+    <div class="goRow"><span>XP</span><b id="goXP">+0 ⭐</b></div>
   </div>
   <div id="goQuip" style="font-size:14px;color:#9fe6ff;font-weight:800;min-height:20px;margin-bottom:4px"></div>
   <button class="btn" id="continueBtn" style="background:linear-gradient(180deg,#8ef07e,#3ac24d);box-shadow:0 8px 0 #1f7a30,0 14px 26px rgba(60,200,80,.4);display:none">CONTINUE 🪙150</button>
@@ -155,12 +175,12 @@
   <button class="btn2" id="quitBtn">🏠 QUIT TO MENU</button>
 </div>
 
-<div id="verTag">BRAINROT RUSH 3D v78</div>
+<div id="verTag">BRAINROT RUSH 3D v79</div>
 <div id="err" style="position:fixed;left:8px;right:8px;bottom:24px;z-index:30;display:none;background:rgba(120,10,20,.92);color:#fff;font:600 12px monospace;padding:8px 12px;border-radius:8px;white-space:pre-wrap"></div>
 
 <script type="module">
 import * as THREE from 'three';
-const GAME_VERSION='v78';
+const GAME_VERSION='v79';
 const el=id=>document.getElementById(id);
 const setLS=(k,v)=>{ try{ localStorage.setItem(k,v); }catch(e){} };   // safe write (Safari private mode throws on setItem)
 const reduceMotion=(()=>{ try{ return matchMedia('(prefers-reduced-motion: reduce)').matches; }catch(e){ return false; } })();   // a11y: damp shake + FOV kick
@@ -456,6 +476,7 @@ function refreshCharUI(){ const c=CHARACTERS[curChar]; el('charName').textConten
   if(isOwned(c)){ el('charStatus').textContent='✓ owned'; el('playBtn').textContent='RUN ▶'; }
   else if(totalCoins>=c.cost){ el('charStatus').textContent='🪙 '+c.cost+' — tap to unlock'; el('playBtn').textContent='UNLOCK 🪙'+c.cost; }
   else { el('charStatus').textContent='🔒 🪙'+c.cost+' (need '+(c.cost-totalCoins)+' more)'; el('playBtn').textContent='🔒 🪙'+c.cost; }
+  renderCharGrid();   // keep the all-unlocks grid in sync
 }
 function cycleChar(d){ curChar=(curChar+d+CHARACTERS.length)%CHARACTERS.length; loadCharacter(CHARACTERS[curChar]); refreshCharUI(); }
 function onPlay(){ const c=CHARACTERS[curChar];
@@ -656,6 +677,7 @@ function pickType(){ const d=diffOf(), r=Math.random();   // early: roof-friendl
 const MENU=0,PLAY=1,OVER=2,DYING=3; let state=MENU, paused=false;
 let deathT=0, deathVy=0, deathSpin=0;   // crash tumble animation
 let continues=0, bankedThisRun=0, missionsTicked=false; const REVIVE_COST=150;   // one paid revive per run; delta-bank keeps coin accounting exact
+let xpBanked=0, surfBanked=0, nearBanked=0, distBanked=0;   // same delta-banking for XP/lifetime stats across revives
 let speed=SPEED0, dist=0, coins$=0, tRun=0, shake=0, lastMile=0, coinPulse=0;
 const FOV0=62, FOVMAX=72;   // camera FOV widens with speed for a stronger sense of motion
 let pMag=0, pX2=0, pShield=false, pInv=0, pHover=0;   // magnet timer, 2x timer, shield flag, post-shield invuln, hoverboard timer
@@ -723,6 +745,39 @@ function buyUpg(id){ const u=UPGRADES.find(x=>x.id===id); if(!u||UPG[id]>=u.max)
   if(totalCoins<cost)return; totalCoins-=cost; setLS('br_coins',totalCoins); UPG[id]++; saveUpg();
   sPow(); el('mCoins').textContent=fmtC(totalCoins); renderShop(); }
 
+// ============ persistent progression: Brainrot Level + lifetime stats + trophy wall ============
+let lvl=+localStorage.getItem('br_lvl')||1, xpIn=+localStorage.getItem('br_xpin')||0;
+const xpNeed=l=>100+(l-1)*60;   // lvl2 @100xp, +60/level (~1 casual run ≈ 100xp)
+let stats; try{ stats=JSON.parse(localStorage.getItem('br_stats'))||{}; }catch(e){ stats={}; }
+stats=Object.assign({runs:0,surf:0,near:0,distTot:0,coinTot:0,revives:0,maxMult:1},stats);
+let ach; try{ ach=JSON.parse(localStorage.getItem('br_ach'))||[]; }catch(e){ ach=[]; }
+const ACH=[
+  {id:'first',  e:'🎬', name:'First Run',      desc:'Finish a run',                 r:50,  t:()=>stats.runs>=1},
+  {id:'run800', e:'🏃', name:'Marathoner',     desc:'Run 800m in one go',           r:150, t:()=>best>=800},
+  {id:'run1500',e:'🚀', name:'Ultra Runner',   desc:'Run 1500m in one go',          r:300, t:()=>best>=1500},
+  {id:'tour',   e:'🌍', name:'World Tour',     desc:'Visit all 7 zones in one run', r:800, t:()=>best>=3600},
+  {id:'combo5', e:'🔥', name:'Max Combo',      desc:'Reach a x5 combo',             r:200, t:()=>stats.maxMult>=5},
+  {id:'surf25', e:'🚂', name:'Roof Surfer',    desc:'Surf 25 train roofs (total)',  r:200, t:()=>stats.surf>=25},
+  {id:'near50', e:'😎', name:'Daredevil',      desc:'50 near-misses (total)',       r:200, t:()=>stats.near>=50},
+  {id:'rich',   e:'💰', name:'Coin Hoarder',   desc:'Bank 5,000 lifetime coins',    r:250, t:()=>stats.coinTot>=5000},
+  {id:'own3',   e:'🎭', name:'Collector',      desc:'Own 3 characters',             r:200, t:()=>owned.length>=3},
+  {id:'own7',   e:'👑', name:'Full Squad',     desc:'Own all 7 characters',         r:1000,t:()=>owned.length>=7},
+  {id:'revive', e:'💚', name:'Never Give Up',  desc:'Use a Continue',               r:100, t:()=>stats.revives>=1},
+  {id:'lvl10',  e:'🧠', name:'Brainrot Brain', desc:'Reach Level 10',               r:500, t:()=>lvl>=10},
+];
+function saveProg(){ setLS('br_lvl',lvl); setLS('br_xpin',xpIn); setLS('br_stats',JSON.stringify(stats)); setLS('br_ach',JSON.stringify(ach)); }
+function addXP(n){ xpIn+=n; let ups=0; while(xpIn>=xpNeed(lvl)){ xpIn-=xpNeed(lvl); lvl++; ups++; totalCoins+=25*lvl; }
+  if(ups) setLS('br_coins',totalCoins); saveProg(); refreshLvlUI(); return ups; }
+function refreshLvlUI(){ el('lvlNum').textContent='🧠 LVL '+lvl; el('lvlFill').style.width=Math.min(100,xpIn/xpNeed(lvl)*100)+'%'; }
+function checkAch(){ const got=[]; for(const a of ACH){ if(!ach.includes(a.id)&&a.t()){ ach.push(a.id); totalCoins+=a.r; got.push(a); } }
+  if(got.length){ setLS('br_coins',totalCoins); saveProg(); renderTrophies(); } return got; }
+function renderTrophies(){ el('trophyList').innerHTML=ACH.map(a=>{ const ok=ach.includes(a.id);
+  return '<div class="msn'+(ok?' msnDone':'')+'" style="opacity:'+(ok?'1':'.55')+'"><div class="msnTop"><span>'+(ok?'✅ ':'')+a.e+' <b>'+a.name+'</b> — '+a.desc+'</span><b>🪙'+a.r+'</b></div></div>'; }).join(''); }
+function renderCharGrid(){ const box=el('charGrid'); if(!box)return;
+  box.innerHTML=CHARACTERS.map((c,i)=>{ const own=isOwned(c), sel=i===curChar;
+    return '<button class="cg'+(sel?' cgSel':'')+(own?'':' cgLock')+'" data-i="'+i+'">'+BIOMES[i].emoji+(own?'':'<span class="cgPrice">'+(c.cost>=1000?(c.cost/1000)+'k':c.cost)+'</span>')+'</button>'; }).join('');
+  box.querySelectorAll('.cg').forEach(b=>b.onclick=()=>{ curChar=+b.dataset.i; loadCharacter(CHARACTERS[curChar]); refreshCharUI(); }); }
+
 // ============ audio ============
 let AC=null; const ac=()=>{ if(!AC){try{AC=new (AudioContext||webkitAudioContext)()}catch(e){}} return AC; };
 let soundMode=+localStorage.getItem('br_sound'); if(isNaN(soundMode)) soundMode = localStorage.getItem('br_mute')==='1'?2:0;   // 0 all · 1 music-off (SFX on) · 2 silent
@@ -768,7 +823,7 @@ function collectCoin(c){ c.got=true; bumpCombo(); coinPulse=0.13;
   poolCoin(c); }
 
 // ============ input ============
-const menuBlocked=()=>!el('tut').classList.contains('hidden')||!el('shop').classList.contains('hidden');   // an overlay is covering the menu
+const menuBlocked=()=>!el('tut').classList.contains('hidden')||!el('shop').classList.contains('hidden')||!el('trophies').classList.contains('hidden');   // an overlay is covering the menu
 function move(d){ if(state!==PLAY||paused)return; const t=Math.max(0,Math.min(2,P.lane+d)); if(t!==P.lane){P.lane=t;sLane();} }
 function doJump(){ P.vy=JUMPV; P.grounded=false; coyoteT=0; jumpBufT=0; P.roll=0; sq=0.22; sJump(); burst(P.x,P.y+0.2,0,7,playerTint,3,0.5); }
 function jump(){ if(state!==PLAY||paused)return; if(P.roll>0)return;
@@ -791,6 +846,8 @@ el('prevChar').onclick=()=>cycleChar(-1); el('nextChar').onclick=()=>cycleChar(1
 el('shopBtn').onclick=()=>{ renderShop(); el('menu').classList.add('hidden'); el('shop').classList.remove('hidden'); };
 el('shopBack').onclick=()=>{ el('shop').classList.add('hidden'); el('menu').classList.remove('hidden'); refreshCharUI(); };
 el('dailyBtn').onclick=claimDaily;
+el('trophyBtn').onclick=()=>{ renderTrophies(); el('menu').classList.add('hidden'); el('trophies').classList.remove('hidden'); };
+el('trophyBack').onclick=()=>{ el('trophies').classList.add('hidden'); el('menu').classList.remove('hidden'); refreshCharUI(); };
 el('resumeBtn').onclick=togglePause;
 el('restartBtn').onclick=()=>{ el('pauseMenu').classList.add('hidden'); startGame(); };
 el('quitBtn').onclick=quitToMenu;
@@ -818,7 +875,7 @@ function reset(){ clearWorld(); speed=SPEED0; dist=0; coins$=0; tRun=0; shake=0;
   runSurf=0; runNear=0; runMaxMult=1; biomeIdx=-1; coinPulse=0; quipT=0;
   camera.fov=FOV0; camera.updateProjectionMatrix(); el('pups').textContent='';
   P.lane=1; P.x=0; P.y=0; P.vy=0; P.roll=0; P.grounded=true; sq=0; pitch=0;
-  continues=0; bankedThisRun=0; missionsTicked=false;
+  continues=0; bankedThisRun=0; missionsTicked=false; xpBanked=0; surfBanked=0; nearBanked=0; distBanked=0;
   // scenery/dashes reset positions handled continuously
 }
 function startGame(){ ac(); reset(); state=PLAY; paused=false;
@@ -839,15 +896,27 @@ function finishGameOver(){ state=OVER;
   const gain=Math.max(0, coins$-bankedThisRun); totalCoins+=gain; bankedThisRun=coins$; setLS('br_coins',totalCoins);  // bank only newly-collected coins (survives revives)
   const isBest = Math.floor(dist)>best && dist>10;
   if(isBest){ best=Math.floor(dist); setLS('br_best',best); }
+  const firstEnd=!missionsTicked;
   let mGain=0; if(!missionsTicked){ mGain=tickMissions({dist:Math.floor(dist), coins:coins$, surf:runSurf, near:runNear, runs:1, maxMult:runMaxMult}); missionsTicked=true; renderMissions(); }  // tick once per run
+  // lifetime stats + XP (delta-banked so revives never double-count)
+  if(firstEnd) stats.runs++;
+  stats.surf+=runSurf-surfBanked; surfBanked=runSurf;
+  stats.near+=runNear-nearBanked; nearBanked=runNear;
+  stats.distTot+=Math.floor(dist)-distBanked; distBanked=Math.floor(dist);
+  stats.coinTot+=gain; if(runMaxMult>stats.maxMult) stats.maxMult=runMaxMult;
+  const runXP=Math.floor(dist/10)+Math.floor(coins$/5), xpGain=runXP-xpBanked; xpBanked=runXP;
+  const ups=addXP(xpGain), gotA=checkAch();
+  el('goXP').textContent='+'+xpGain+' ⭐'+(ups?('  LVL '+lvl+'!'):'');
   el('goTitle').textContent = isBest ? '🏆 NEW BEST!' : 'TUNG DOWN!'; el('goTitle').style.color = isBest ? '#ffe14d' : '#ff5b6b';
   el('goDist').textContent=Math.floor(dist)+' m'; el('goCoins').textContent=coins$; el('goBest').textContent=best+' m';
   el('goQuip').textContent = mGain?('🎯 Mission complete! +🪙'+mGain) : isBest?('🏆 New record — '+best+'m!')
+    : ups?('⭐ LEVEL UP — Brainrot Level '+lvl+'! +🪙'+(25*lvl))
+    : gotA.length?('🏆 '+gotA[0].e+' '+gotA[0].name+' unlocked! +🪙'+gotA[0].r)
     : (Math.random()<0.5 && biomeIdx>=0 ? "tung'd in the "+BIOMES[biomeIdx].emoji+' '+BIOMES[biomeIdx].name+' zone!' : QUIPS[(Math.random()*QUIPS.length)|0]);   // zone-aware death quip
   const canRevive = continues<1 && totalCoins>=REVIVE_COST;
   el('continueBtn').style.display = canRevive?'block':'none'; el('continueBtn').textContent='CONTINUE 🪙'+REVIVE_COST;
   el('hud').classList.add('hidden'); el('pauseBtn').style.display='none'; el('gameover').classList.remove('hidden'); el('mBest').textContent=best; el('mCoins').textContent=fmtC(totalCoins); }
-function doContinue(){ if(continues>=1 || totalCoins<REVIVE_COST) return; totalCoins-=REVIVE_COST; setLS('br_coins',totalCoins); continues++;
+function doContinue(){ if(continues>=1 || totalCoins<REVIVE_COST) return; totalCoins-=REVIVE_COST; setLS('br_coins',totalCoins); continues++; stats.revives++; saveProg();
   for(const o of obstacles) poolOb(o.mesh); obstacles=[];   // clear the field so you don't instantly re-crash
   P.y=0; P.vy=0; P.lane=1; P.x=0; P.roll=0; P.grounded=true; sq=0; pitch=0; deathT=0; shake=0; pInv=2.6; pShield=false; nextZ=Math.max(nextZ,18);
   if(player){ player.rotation.set(0, player.userData.baseRotY||0, 0); player.position.set(0,0,0); player.scale.set(1,1,1); }
@@ -999,7 +1068,7 @@ function animate(now){ let dt=(now-last)/1000; last=now; if(dt>0.05)dt=0.05;
   } catch(err){ showErr(err); }                 // never let one bad frame freeze the whole game
   requestAnimationFrame(animate); }
 
-el('mBest').textContent=best; el('mCoins').textContent=fmtC(totalCoins); el('verTag').textContent='BRAINROT RUSH 3D '+GAME_VERSION; renderMissions(); refreshDailyUI();
+el('mBest').textContent=best; el('mCoins').textContent=fmtC(totalCoins); el('verTag').textContent='BRAINROT RUSH 3D '+GAME_VERSION; renderMissions(); refreshDailyUI(); refreshLvlUI(); renderTrophies();
 // (menu is revealed by revealMenu() once the model loads or falls back)
 requestAnimationFrame(animate);
 
