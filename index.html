@@ -155,12 +155,12 @@
   <button class="btn2" id="quitBtn">🏠 QUIT TO MENU</button>
 </div>
 
-<div id="verTag">BRAINROT RUSH 3D v74</div>
+<div id="verTag">BRAINROT RUSH 3D v75</div>
 <div id="err" style="position:fixed;left:8px;right:8px;bottom:24px;z-index:30;display:none;background:rgba(120,10,20,.92);color:#fff;font:600 12px monospace;padding:8px 12px;border-radius:8px;white-space:pre-wrap"></div>
 
 <script type="module">
 import * as THREE from 'three';
-const GAME_VERSION='v74';
+const GAME_VERSION='v75';
 const el=id=>document.getElementById(id);
 const setLS=(k,v)=>{ try{ localStorage.setItem(k,v); }catch(e){} };   // safe write (Safari private mode throws on setItem)
 const reduceMotion=(()=>{ try{ return matchMedia('(prefers-reduced-motion: reduce)').matches; }catch(e){ return false; } })();   // a11y: damp shake + FOV kick
@@ -526,10 +526,11 @@ const mkScn=[
     g.add(part(new THREE.TorusGeometry(0.6,0.16,8,14), CM.cup, 1.5,h*0.55,0)); return g; },
   ()=>{ const g=new THREE.Group();   // Chimpanzini: jungle palms + giant bananas
     if(Math.random()<0.35){ g.add(part(new THREE.CapsuleGeometry(0.55,2.6,4,10), CM.banana, 0,1.6,0, 0,0,0.9));
-      g.add(part(new THREE.SphereGeometry(0.22,8,6), CM.btip, 1.55,2.3,0)); }
+      g.add(part(new THREE.SphereGeometry(0.22,8,6), CM.btip, 1.45,0.45,0));      // stem end of the tilted capsule
+      g.add(part(new THREE.SphereGeometry(0.2,8,6), CM.btip, -1.45,2.75,0)); }    // top end
     else { const h=3.5+Math.random()*2.5; g.add(part(new THREE.CylinderGeometry(0.32,0.45,h,10), M.woodD, 0,h/2,0, 0,0,0.12));
       for(let k=0;k<5;k++){ const a=k*1.256; const fr=part(new THREE.ConeGeometry(0.5,2.6,6), CM.cactus, Math.cos(a)*1.1, h+0.3, Math.sin(a)*1.1);
-        fr.rotation.z=Math.cos(a)*1.25; fr.rotation.x=-Math.sin(a)*1.25; g.add(fr); } } return g; },
+        fr.rotation.z=-Math.cos(a)*1.25; fr.rotation.x=Math.sin(a)*1.25; g.add(fr); } } return g; },   // fronds fan OUTWARD (Rz(+θ) tips +y toward -x, so signs are inverted)
 ];
 zoneScenery=BIOMES.map((b,i)=>{ const arr=[];
   for(let k=0;k<SCN_N;k++){ const g=mkScn[i](); const side=k%2?1:-1;
