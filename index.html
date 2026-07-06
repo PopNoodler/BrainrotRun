@@ -175,12 +175,12 @@
   <button class="btn2" id="quitBtn">🏠 QUIT TO MENU</button>
 </div>
 
-<div id="verTag">BRAINROT RUSH 3D v79</div>
+<div id="verTag">BRAINROT RUSH 3D v80</div>
 <div id="err" style="position:fixed;left:8px;right:8px;bottom:24px;z-index:30;display:none;background:rgba(120,10,20,.92);color:#fff;font:600 12px monospace;padding:8px 12px;border-radius:8px;white-space:pre-wrap"></div>
 
 <script type="module">
 import * as THREE from 'three';
-const GAME_VERSION='v79';
+const GAME_VERSION='v80';
 const el=id=>document.getElementById(id);
 const setLS=(k,v)=>{ try{ localStorage.setItem(k,v); }catch(e){} };   // safe write (Safari private mode throws on setItem)
 const reduceMotion=(()=>{ try{ return matchMedia('(prefers-reduced-motion: reduce)').matches; }catch(e){ return false; } })();   // a11y: damp shake + FOV kick
@@ -687,6 +687,7 @@ const comboMult=()=>Math.min(5, 1+((combo/5)|0));   // x1 → x5 as the streak g
 function bumpCombo(){ combo++; comboT=2.6; }
 const P={ lane:1, x:0, y:0, vy:0, roll:0, grounded:true };
 let sq=0;   // squash(-) / stretch(+) scalar for jump/land weight
+let camDip=0;   // eased camera dip while rolling (sells the duck)
 let pitch=0;   // eased forward-lean / air-pitch of the runner
 let coyoteT=0, jumpBufT=0;   // coyote time (jump just after leaving a ledge) + jump buffering (jump just before landing)
 let best=+localStorage.getItem('br_best')||0, totalCoins=+localStorage.getItem('br_coins')||0;
@@ -829,7 +830,7 @@ function doJump(){ P.vy=JUMPV; P.grounded=false; coyoteT=0; jumpBufT=0; P.roll=0
 function jump(){ if(state!==PLAY||paused)return; if(P.roll>0)return;
   if(P.grounded||coyoteT>0) doJump(); else jumpBufT=0.14; }   // buffer if pressed a touch early
 function roll(){ if(state!==PLAY||paused)return; if(!P.grounded){ P.vy=-JUMPV*0.9; } P.roll=0.55; sRoll(); }
-addEventListener('keydown',e=>{ const k=e.key.toLowerCase();
+addEventListener('keydown',e=>{ if(e.repeat)return; const k=e.key.toLowerCase();   // ignore OS auto-repeat (was machine-gunning lane changes on held keys)
   if((state===MENU||state===OVER)&&(k===' '||k==='enter')){ if(menuBlocked())return; startGame(); return; }
   if(k==='arrowleft'||k==='a')move(1); else if(k==='arrowright'||k==='d')move(-1);   // camera is behind facing +z → screen-x mirrored, so flip L/R
   else if(k==='arrowup'||k==='w'||k===' ')jump(); else if(k==='arrowdown'||k==='s')roll();
@@ -862,6 +863,7 @@ function togglePause(){ if(state!==PLAY)return; paused=!paused; el('pauseBtn').t
   if(paused){ stopMusic(); el('pauseMenu').classList.remove('hidden'); } else { el('pauseMenu').classList.add('hidden'); startMusic(); } }
 function quitToMenu(){ // abandon run: bank coins collected so far, record best, return to menu
   const gain=Math.max(0, coins$-bankedThisRun); totalCoins+=gain; bankedThisRun=coins$; setLS('br_coins',totalCoins);
+  stats.coinTot+=gain; saveProg();   // quit-banked coins still count toward lifetime stats
   if(Math.floor(dist)>best && dist>10){ best=Math.floor(dist); setLS('br_best',best); }
   if(!missionsTicked){ tickMissions({dist:Math.floor(dist), coins:coins$, surf:runSurf, near:runNear, runs:1, maxMult:runMaxMult}); missionsTicked=true; renderMissions(); }
   stopMusic(); paused=false; state=MENU; el('combovig').style.opacity=0; el('combobar').style.opacity=0;
@@ -874,7 +876,7 @@ function reset(){ clearWorld(); speed=SPEED0; dist=0; coins$=0; tRun=0; shake=0;
   pMag=0; pX2=0; pShield=false; pInv=0; pHover=(UPG.headstart||0)*1.6; coyoteT=0; jumpBufT=0; combo=0; comboT=0; roofT=0;
   runSurf=0; runNear=0; runMaxMult=1; biomeIdx=-1; coinPulse=0; quipT=0;
   camera.fov=FOV0; camera.updateProjectionMatrix(); el('pups').textContent='';
-  P.lane=1; P.x=0; P.y=0; P.vy=0; P.roll=0; P.grounded=true; sq=0; pitch=0;
+  P.lane=1; P.x=0; P.y=0; P.vy=0; P.roll=0; P.grounded=true; sq=0; pitch=0; camDip=0;
   continues=0; bankedThisRun=0; missionsTicked=false; xpBanked=0; surfBanked=0; nearBanked=0; distBanked=0;
   // scenery/dashes reset positions handled continuously
 }
@@ -929,7 +931,7 @@ function update(dt){
   tRun+=dt; speed=Math.min(SPEEDMAX, SPEED0+dist*0.03); dist+=speed*dt;   // peak speed at ~1400m, matching the difficulty curve
   while(dist>=lastMile+500){ lastMile+=500; coins$+=50; popup(P.x,3.9,0,lastMile+'m 🥁 TUNG TUNG TUNG!','#ffe14d'); burst(P.x,2.2,0,12,0xffe14d,7,0.9); sTung(); }  // milestone = the signature drum moment
   // lane lerp
-  const tx2=laneOf(P.lane); P.x+=(tx2-P.x)*Math.min(1,dt*13);
+  const tx2=laneOf(P.lane); P.x+=(tx2-P.x)*Math.min(1,dt*16);   // snappier dodge (95% of lane change in ~185ms)
   // roll timer
   if(P.roll>0)P.roll-=dt;
   // vertical physics
@@ -1030,14 +1032,15 @@ function update(dt){
   if(P.roll>0) player.scale.set(1.2,0.55,1.2); else player.scale.set(1-sq*0.5, 1+sq, 1-sq*0.5);
   const running = P.grounded && P.roll<=0;
   player.position.y = P.y + (running ? Math.abs(runcyc)*0.09 : 0);   // stride bob
-  player.rotation.z=(tx2-P.x)*0.12;
+  player.rotation.z=(tx2-P.x)*0.16;   // lean harder into the dodge
   const pitchT = running ? -0.05 : (P.vy>0 ? -0.13 : 0.13);          // lean into run; nose-up rising, nose-down falling
   pitch += (pitchT-pitch)*Math.min(1,dt*8); player.rotation.x=pitch;
   shadow.position.set(P.x, support+0.02, 0); shadow.scale.setScalar(Math.max(0.4,1-(P.y-support)*0.05));
   board.visible=pHover>0; if(pHover>0){ board.position.set(P.x, P.y+0.1+Math.sin(tRun*12)*0.05, 0); board.rotation.z=(laneOf(P.lane)-P.x)*0.15; }
   // camera
   camera.position.x += (P.x*0.5 - camera.position.x)*Math.min(1,dt*6);
-  camera.position.y = camBase.y + (shake>0? (Math.random()-0.5)*shake*(reduceMotion?0.25:1):0);
+  camDip += ((P.roll>0?1:0)-camDip)*Math.min(1,dt*8);   // dip the camera while rolling — sells the duck under the bar
+  camera.position.y = camBase.y - camDip*0.9 + (shake>0? (Math.random()-0.5)*shake*(reduceMotion?0.25:1):0);
   camera.lookAt(P.x*0.35, 1.5, 12.5);   // steeper Subway-Surfers down-the-track angle
   if(shake>0)shake=Math.max(0,shake-dt*3);
   // speed-reactive FOV kick (disabled under reduced-motion)
