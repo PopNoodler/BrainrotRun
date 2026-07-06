@@ -155,12 +155,12 @@
   <button class="btn2" id="quitBtn">🏠 QUIT TO MENU</button>
 </div>
 
-<div id="verTag">BRAINROT RUSH 3D v73</div>
+<div id="verTag">BRAINROT RUSH 3D v74</div>
 <div id="err" style="position:fixed;left:8px;right:8px;bottom:24px;z-index:30;display:none;background:rgba(120,10,20,.92);color:#fff;font:600 12px monospace;padding:8px 12px;border-radius:8px;white-space:pre-wrap"></div>
 
 <script type="module">
 import * as THREE from 'three';
-const GAME_VERSION='v73';
+const GAME_VERSION='v74';
 const el=id=>document.getElementById(id);
 const setLS=(k,v)=>{ try{ localStorage.setItem(k,v); }catch(e){} };   // safe write (Safari private mode throws on setItem)
 const reduceMotion=(()=>{ try{ return matchMedia('(prefers-reduced-motion: reduce)').matches; }catch(e){ return false; } })();   // a11y: damp shake + FOV kick
@@ -210,12 +210,7 @@ for(let i=0;i<TIE_N;i++){ const t=new THREE.Mesh(tieGeo,tieMat); t.position.set(
 const dashMats=[0xff5b9d,0x4fd0ff,0xffe14d].map(c=>new THREE.MeshBasicMaterial({color:c}));   // candy-colored center dashes
 const dashes=[];
 for(let i=0;i<26;i++){ const d=new THREE.Mesh(new THREE.PlaneGeometry(0.35,3),dashMats[i%3]); d.rotation.x=-Math.PI/2; d.position.set(0,0.06,i*9); scene.add(d); dashes.push(d); }
-// buildings scenery (recycled)
-const bMats=[0x5a3fb0,0x8a5cff,0xe0326e,0x4fd0ff,0xff7a3d].map(c=>new THREE.MeshLambertMaterial({color:c}));
-const buildings=[];
-for(let i=0;i<18;i++){ const bh=8+Math.random()*22, side=i%2?1:-1;
-  const b=new THREE.Mesh(new THREE.BoxGeometry(4+Math.random()*3,bh,4+Math.random()*4), bMats[i%bMats.length]);
-  b.position.set(side*(13+Math.random()*7), bh/2-1, i*15); scene.add(b); buildings.push(b); }
+// (generic building cubes removed — each character zone has its own themed scenery set, created after the character materials exist)
 // ---- background flying Bombardiro (croc-bomber) — flies the sky in his own zone ----
 const flyer=new THREE.Group();
 flyer.add(part(new THREE.CapsuleGeometry(0.5,2.4,4,8), new THREE.MeshLambertMaterial({color:0x4c7a3a}), 0,0,0, 0,0,Math.PI/2));   // fuselage horizontal
@@ -228,24 +223,25 @@ scene.add(flyer); flyer.position.set(-40,24,75); flyer.visible=false; let flyerX
 // Each zone: that character's palette + a GIANT 3D model of them beside the track shouting their
 // catchphrase + themed floating props + zone banner. (Builders are hoisted fn declarations.)
 const BIOMES=[
-  {name:'TUNG TUNG SAHUR',       emoji:'🪵', accent:'#e8b060', bg:0x241635, fog:0x2a1c40, ground:0x3a2f28, build:[0x6b4a2a,0x8a5c34,0x5a3fb0,0x9a6b3c,0x4a3520], giant:buildSahur,      gs:3.4, quip:'TUNG TUNG TUNG SAHUR! 🥁',        props:['🪵','🥁','🌙']},
-  {name:'TRALALERO TRALALA',     emoji:'🦈', accent:'#4fd0ff', bg:0x0e2a4a, fog:0x14406a, ground:0x1d3a55, build:[0x2f6fbf,0x4fd0ff,0x1e4f8a,0x63e0e8,0x2255aa], giant:buildTralalero,  gs:3.0, quip:'TRALALERO TRALALA! 🦈👟',        props:['🦈','🌊','👟']},
-  {name:'BOMBARDIRO CROCODILO',  emoji:'🐊', accent:'#8bbf5a', bg:0x2c3a2a, fog:0x3d5038, ground:0x37452e, build:[0x4c7a3a,0x8a9099,0x33582a,0x6b7a4a,0x556b2f], giant:buildBombardiro, gs:3.0, quip:'BOMBARDIRO CROCODILO! 🐊✈️',     props:['🐊','✈️','💥']},
-  {name:'LIRILÌ LARILÀ',         emoji:'🌵', accent:'#ffd24d', bg:0xc27a35, fog:0xd89a55, ground:0xb08850, build:[0x4e9a44,0xd4a017,0xc06a2a,0x8a5c34,0x6aa84f], giant:buildLirili,     gs:4.2, quip:'LIRILÌ LARILÀ~ 🐘🌵',           props:['🌵','🐘','☀️']},
-  {name:'BONECA AMBALABU',       emoji:'🐸', accent:'#7ed957', bg:0x14301f, fog:0x1d4028, ground:0x2a4030, build:[0x3d8a2a,0x141418,0x5aa03a,0x2a5a20,0x9195a0], giant:buildBoneca,     gs:2.9, quip:'BONECA AMBALABU! 🐸🛞',          props:['🐸','🛞','🪷']},
-  {name:'CAPPUCCINO ASSASSINO',  emoji:'☕', accent:'#f5ebd4', bg:0x2e1f16, fog:0x402c1e, ground:0x4d3421, build:[0x8c6345,0xf5ebd4,0x4d2e1a,0xa8795a,0x6b4a30], giant:buildCappuccino, gs:2.7, quip:'CAPPUCCINO ASSASSINO! ☕🗡️',     props:['☕','🗡️','🥐']},
-  {name:'CHIMPANZINI BANANINI',  emoji:'🍌', accent:'#ffe14d', bg:0x1a3a14, fog:0x245422, ground:0x2e5424, build:[0xf2d133,0x4e9a44,0x7a5230,0xffe14d,0x3a7a30], giant:buildChimpanzini,gs:3.1, quip:'CHIMPANZINI BANANINI! 🐒🍌',      props:['🍌','🐒','🌴']},
+  {name:'TUNG TUNG SAHUR',       emoji:'🪵', accent:'#e8b060', bg:0x241635, fog:0x2a1c40, ground:0x3a2f28, build:[0x6b4a2a,0x8a5c34,0x5a3fb0,0x9a6b3c,0x4a3520], giant:buildSahur,      gs:3.4, anim:'drum', quip:'TUNG TUNG TUNG SAHUR! 🥁',        props:['🪵','🥁','🌙']},
+  {name:'TRALALERO TRALALA',     emoji:'🦈', accent:'#4fd0ff', bg:0x0e2a4a, fog:0x14406a, ground:0x1d3a55, build:[0x2f6fbf,0x4fd0ff,0x1e4f8a,0x63e0e8,0x2255aa], giant:buildTralalero,  gs:3.0, anim:'sway', quip:'TRALALERO TRALALA! 🦈👟',        props:['🦈','🌊','👟']},
+  {name:'BOMBARDIRO CROCODILO',  emoji:'🐊', accent:'#8bbf5a', bg:0x2c3a2a, fog:0x3d5038, ground:0x37452e, build:[0x4c7a3a,0x8a9099,0x33582a,0x6b7a4a,0x556b2f], giant:buildBombardiro, gs:3.0, anim:'bob', quip:'BOMBARDIRO CROCODILO! 🐊✈️',     props:['🐊','✈️','💥']},
+  {name:'LIRILÌ LARILÀ',         emoji:'🌵', accent:'#ffd24d', bg:0xc27a35, fog:0xd89a55, ground:0xb08850, build:[0x4e9a44,0xd4a017,0xc06a2a,0x8a5c34,0x6aa84f], giant:buildLirili,     gs:4.2, anim:'sway', quip:'LIRILÌ LARILÀ~ 🐘🌵',           props:['🌵','🐘','☀️']},
+  {name:'BONECA AMBALABU',       emoji:'🐸', accent:'#7ed957', bg:0x14301f, fog:0x1d4028, ground:0x2a4030, build:[0x3d8a2a,0x141418,0x5aa03a,0x2a5a20,0x9195a0], giant:buildBoneca,     gs:2.9, anim:'hop', quip:'BONECA AMBALABU! 🐸🛞',          props:['🐸','🛞','🪷']},
+  {name:'CAPPUCCINO ASSASSINO',  emoji:'☕', accent:'#f5ebd4', bg:0x2e1f16, fog:0x402c1e, ground:0x4d3421, build:[0x8c6345,0xf5ebd4,0x4d2e1a,0xa8795a,0x6b4a30], giant:buildCappuccino, gs:2.7, anim:'bob', quip:'CAPPUCCINO ASSASSINO! ☕🗡️',     props:['☕','🗡️','🥐']},
+  {name:'CHIMPANZINI BANANINI',  emoji:'🍌', accent:'#ffe14d', bg:0x1a3a14, fog:0x245422, ground:0x2e5424, build:[0xf2d133,0x4e9a44,0x7a5230,0xffe14d,0x3a7a30], giant:buildChimpanzini,gs:3.1, anim:'hop', quip:'CHIMPANZINI BANANINI! 🐒🍌',      props:['🍌','🐒','🌴']},
 ];
 let biomeIdx=-1; const _bg=new THREE.Color(0x241635), _fog=new THREE.Color(0x2a1c40); const _tmpC=new THREE.Color();
-var giantOf=null, curGiant=null, floaties=null, propMats=null, zoneTO=0;   // late-bound zone actors (created after the builders' materials exist)
+var giantOf=null, curGiant=null, floaties=null, propMats=null, zoneScenery=null, curScn=null, zoneTO=0;   // late-bound zone actors (created after the builders' materials exist)
 function setBiome(i,announce){ biomeIdx=i; const b=BIOMES[i]; _bg.setHex(b.bg); _fog.setHex(b.fog);
   groundMat.color.setHex(b.ground); sideMat.color.copy(_tmpC.setHex(b.ground)).multiplyScalar(0.6);
-  b.build.forEach((c,k)=>{ if(bMats[k]) bMats[k].color.setHex(c); });
+  if(zoneScenery){ if(curScn) for(const g of curScn) g.visible=false; curScn=zoneScenery[i]; for(const g of curScn) g.visible=true; }   // swap in this zone's themed roadside scenery
   if(giantOf){ if(curGiant) curGiant.visible=false; curGiant=giantOf[i];   // swap in this zone's giant character, ahead of the player
     if(curGiant){ curGiant.visible=true; curGiant.position.z=55+Math.random()*40; curGiant.position.x=(Math.random()<0.5?-1:1)*(11.5+Math.random()*2.5); } }
   if(floaties&&propMats){ for(const f of floaties) f.material=propMats[i][(Math.random()*propMats[i].length)|0]; }   // zone-themed floating props
   if(announce && state===PLAY){ const zb=el('zone'); zb.textContent=b.emoji+' '+b.name+' ZONE'; zb.style.color=b.accent;
     zb.style.opacity='1'; zb.style.transform='scale(1.06)'; sQuip();
+    burst(0,4,8,18,parseInt(b.accent.slice(1),16),8,1.0);   // zone-entry confetti in the zone's color
     clearTimeout(zoneTO); zoneTO=setTimeout(()=>{ zb.style.opacity='0'; zb.style.transform='scale(0.9)'; },1900); } }
 setBiome(0,false);
 
@@ -500,7 +496,47 @@ floaties=[];
 for(let i=0;i<8;i++){ const s=new THREE.Sprite(propMats[0][i%propMats[0].length]); s.scale.set(2.4,2.4,1);
   s.position.set((i%2?1:-1)*(8+Math.random()*8), 8+Math.random()*7, i*24);
   s.userData={by:s.position.y, ph:Math.random()*6.28}; scene.add(s); floaties.push(s); }
-setBiome(0,false);   // re-sync now that the zone actors exist (attaches Sahur's giant + props)
+// ---- ZONE SCENERY: distinct themed roadside sets per character zone (no generic cubes) ----
+const SCN_N=12, SCN_SPAN=264;
+const mkScn=[
+  ()=>{ const g=new THREE.Group(); const h=2.5+Math.random()*3;   // Sahur: wooden log stumps
+    g.add(part(new THREE.CylinderGeometry(0.8,0.95,h,10), M.wood, 0,h/2,0));
+    g.add(part(new THREE.CylinderGeometry(0.82,0.82,0.16,10), M.woodD, 0,h+0.06,0)); return g; },
+  ()=>{ const g=new THREE.Group();   // Tralalero: ocean waves + the occasional giant Nike
+    if(Math.random()<0.3){ g.add(part(new THREE.BoxGeometry(2.6,1.4,4.4), CM.sneaker, 0,1.0,0));
+      g.add(part(new THREE.BoxGeometry(2.9,0.5,4.7), CM.sole, 0,0.25,0));
+      g.add(part(new THREE.SphereGeometry(1.15,12,10), CM.belly, 0,1.1,1.9)); }
+    else { const r=1.8+Math.random()*1.8; const w=part(new THREE.SphereGeometry(r,14,10), CM.blue, 0,0.2,0); w.scale.y=0.35; g.add(w); } return g; },
+  ()=>{ const g=new THREE.Group();   // Bombardiro: hangars + watchtowers
+    if(Math.random()<0.5){ g.add(part(new THREE.BoxGeometry(4.5,2.4,5.5), CM.croc, 0,1.2,0));
+      g.add(part(new THREE.CylinderGeometry(2.3,2.3,5.6,12), CM.metal, 0,2.4,0, Math.PI/2,0,0)); }
+    else { g.add(part(new THREE.BoxGeometry(0.4,5,0.4), CM.metal, -0.8,2.5,0)); g.add(part(new THREE.BoxGeometry(0.4,5,0.4), CM.metal, 0.8,2.5,0));
+      g.add(part(new THREE.BoxGeometry(2.6,1.6,2.6), CM.croc, 0,5.6,0)); } return g; },
+  ()=>{ const g=new THREE.Group();   // Lirilì: desert cacti + rocks
+    if(Math.random()<0.35){ g.add(part(new THREE.DodecahedronGeometry(1+Math.random()*1.2,0), M.woodD, 0,0.8,0)); }
+    else { const h=2.5+Math.random()*2.5; g.add(part(new THREE.CapsuleGeometry(0.55,h,4,10), CM.cactus, 0,h/2+0.5,0));
+      g.add(part(new THREE.CapsuleGeometry(0.3,1.1,4,8), CM.cactus, 0.85,h*0.55,0, 0,0,-0.5));
+      g.add(part(new THREE.CapsuleGeometry(0.3,0.9,4,8), CM.cactus, -0.8,h*0.4,0, 0,0,0.5));
+      if(Math.random()<0.3) g.add(part(new THREE.SphereGeometry(0.3,8,6), CM.mouthD, 0,h+1.15,0)); } return g; },
+  ()=>{ const g=new THREE.Group(); const n=2+(Math.random()*3|0);   // Boneca: stacked tires
+    for(let k=0;k<n;k++){ const t=part(new THREE.TorusGeometry(1.1,0.42,10,18), CM.tire, 0,0.45+k*0.85,0); t.rotation.x=Math.PI/2; g.add(t); } return g; },
+  ()=>{ const g=new THREE.Group(); const h=2+Math.random()*1.5;   // Cappuccino: giant coffee cups
+    g.add(part(new THREE.CylinderGeometry(1.3,1.0,h,14), CM.cup, 0,h/2,0));
+    const f=part(new THREE.SphereGeometry(1.25,12,10), CM.foam, 0,h+0.15,0); f.scale.y=0.4; g.add(f);
+    g.add(part(new THREE.TorusGeometry(0.6,0.16,8,14), CM.cup, 1.5,h*0.55,0)); return g; },
+  ()=>{ const g=new THREE.Group();   // Chimpanzini: jungle palms + giant bananas
+    if(Math.random()<0.35){ g.add(part(new THREE.CapsuleGeometry(0.55,2.6,4,10), CM.banana, 0,1.6,0, 0,0,0.9));
+      g.add(part(new THREE.SphereGeometry(0.22,8,6), CM.btip, 1.55,2.3,0)); }
+    else { const h=3.5+Math.random()*2.5; g.add(part(new THREE.CylinderGeometry(0.32,0.45,h,10), M.woodD, 0,h/2,0, 0,0,0.12));
+      for(let k=0;k<5;k++){ const a=k*1.256; const fr=part(new THREE.ConeGeometry(0.5,2.6,6), CM.cactus, Math.cos(a)*1.1, h+0.3, Math.sin(a)*1.1);
+        fr.rotation.z=Math.cos(a)*1.25; fr.rotation.x=-Math.sin(a)*1.25; g.add(fr); } } return g; },
+];
+zoneScenery=BIOMES.map((b,i)=>{ const arr=[];
+  for(let k=0;k<SCN_N;k++){ const g=mkScn[i](); const side=k%2?1:-1;
+    g.position.set(side*(12+Math.random()*6), 0, k*(SCN_SPAN/SCN_N)+Math.random()*6);
+    g.rotation.y=Math.random()*6.28; g.visible=false; scene.add(g); arr.push(g); }
+  return arr; });
+setBiome(0,false);   // re-sync now that the zone actors exist (attaches Sahur's giant + scenery + props)
 // ---- particle juice (pooled) ----
 const pGeo=new THREE.BoxGeometry(0.2,0.2,0.2); const partPool=[], parts=[];
 for(let i=0;i<90;i++){ const m=new THREE.Mesh(pGeo,new THREE.MeshBasicMaterial({color:0xffffff})); m.visible=false; scene.add(m); partPool.push(m); }
@@ -779,7 +815,7 @@ function reset(){ clearWorld(); speed=SPEED0; dist=0; coins$=0; tRun=0; shake=0;
   camera.fov=FOV0; camera.updateProjectionMatrix(); el('pups').textContent='';
   P.lane=1; P.x=0; P.y=0; P.vy=0; P.roll=0; P.grounded=true; sq=0; pitch=0;
   continues=0; bankedThisRun=0; missionsTicked=false;
-  // buildings/dashes reset positions handled continuously
+  // scenery/dashes reset positions handled continuously
 }
 function startGame(){ ac(); reset(); state=PLAY; paused=false;
   if(player){ player.rotation.set(0, player.userData.baseRotY||0, 0); player.position.set(0,0,0); }
@@ -894,9 +930,14 @@ function update(dt){
   // recycle scenery
   for(const d of dashes){ d.position.z-=dz; if(d.position.z< -12) d.position.z+=234; }
   for(const t of ties){ t.position.z-=dz; if(t.position.z< -12) t.position.z+=TIE_N*TIE_SP; }
-  for(const b of buildings){ b.position.z-=dz; if(b.position.z< -14) b.position.z+=270; }
-  // zone giant: scrolls past, bobs, and shouts its catchphrase as it passes you
-  if(curGiant){ const gz=curGiant.position.z; curGiant.position.z-=dz; curGiant.position.y=Math.sin(tRun*1.2)*0.15;
+  if(curScn) for(const g of curScn){ g.position.z-=dz; if(g.position.z< -16) g.position.z+=SCN_SPAN; }   // themed zone scenery scrolls by
+  // zone giant: scrolls past, idles like itself, and shouts its catchphrase as it passes you
+  if(curGiant){ const gz=curGiant.position.z; curGiant.position.z-=dz;
+    const an=BIOMES[biomeIdx].anim;
+    if(an==='hop') curGiant.position.y=Math.abs(Math.sin(tRun*2.3))*0.5;                                     // excited bouncing (Boneca tire / Chimpanzini)
+    else if(an==='drum') curGiant.position.y=Math.abs(Math.sin(tRun*2.8))*0.3;                               // sharp drum-beat bob (Sahur)
+    else if(an==='sway'){ curGiant.position.y=Math.sin(tRun*1.1)*0.12; curGiant.rotation.z=Math.sin(tRun*0.9)*0.07; }   // swimming/majestic sway
+    else curGiant.position.y=Math.sin(tRun*1.2)*0.15;
     if(curGiant.position.z< -25){ curGiant.position.z+=GIANT_SPAN; curGiant.position.x=(Math.random()<0.5?-1:1)*(11.5+Math.random()*2.5); }
     if(quipT<=0 && gz>6 && curGiant.position.z<=6){ quipT=6; popup(curGiant.position.x>0?2.4:-2.4,4.6,5,BIOMES[biomeIdx].quip,BIOMES[biomeIdx].accent); sQuip(); } }
   if(quipT>0)quipT-=dt;
