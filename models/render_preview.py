@@ -21,6 +21,7 @@ def mat(n, rgb):
 WOOD=mat('wood',(0.79,0.54,0.31)); WOODD=mat('woodD',(0.54,0.34,0.19))
 WHITE=mat('white',(0.95,0.95,0.94)); BLACK=mat('black',(0.06,0.05,0.04))
 MOUTH=mat('mouth',(0.29,0.06,0.06)); BROW=mat('brow',(0.23,0.14,0.07))
+CLOTH=mat('cloth',(0.91,0.89,0.82)); BATM=mat('batm',(0.66,0.46,0.24))
 BLUE=mat('blue',(0.25,0.5,0.75)); BELLY=mat('belly',(0.88,0.9,0.92))
 TOOTH=mat('tooth',(0.96,0.96,0.94)); SNEAK=mat('sneak',(0.18,0.43,0.94)); SOLE=mat('sole',(0.95,0.95,0.95))
 CROC=mat('croc',(0.3,0.48,0.23)); CROCD=mat('crocD',(0.2,0.35,0.16)); CROCB=mat('crocB',(0.85,0.82,0.66))
@@ -44,8 +45,8 @@ def cyl(r,d,loc,m=WOOD,rot=None):
     bpy.ops.mesh.primitive_cylinder_add(radius=r,depth=d,location=T(*loc)); o=bpy.context.active_object
     if rot: o.rotation_euler=rot
     bpy.ops.object.shade_smooth(); setm(o,m); return o
-def cone(r,d,loc,m=WOOD,rot=None,sc=None):
-    bpy.ops.mesh.primitive_cone_add(radius1=r,depth=d,location=T(*loc)); o=bpy.context.active_object
+def cone(r,d,loc,m=WOOD,rot=None,sc=None,r2=0.0):
+    bpy.ops.mesh.primitive_cone_add(radius1=r,radius2=r2,depth=d,location=T(*loc)); o=bpy.context.active_object
     if sc: o.scale=(sc[0],sc[2],sc[1])
     if rot: o.rotation_euler=rot
     bpy.ops.object.shade_smooth(); setm(o,m); return o
@@ -59,17 +60,24 @@ def torus(R,r,loc,m):   # three.js torus (XY plane, hole along Z) -> blender whe
     o=bpy.context.active_object; o.rotation_euler=(math.radians(90),0,0); bpy.ops.object.shade_smooth(); setm(o,m); return o
 
 def build_sahur():
-    cyl(0.46,1.9,(0,1.75,0),WOOD); sph(0.46,(0,0.85,0),m=WOOD); sph(0.47,(0,2.78,0),(1,0.72,1),WOOD)
-    for ex in (-0.22,0.22):
-        sph(0.17,(ex,2.22,0.36),m=WHITE); sph(0.085,(ex*0.92,2.2,0.5),m=BLACK); sph(0.03,(ex*0.92-0.04,2.26,0.55),m=WHITE)
-        box(0.3,0.08,0.09,(ex,2.44,0.36),BROW,rz=(0.5 if ex<0 else -0.5))
-    sph(0.22,(0,1.86,0.36),(1,0.8,0.5),MOUTH)
-    box(0.3,0.06,0.04,(0,1.97,0.5),WHITE); box(0.3,0.06,0.04,(0,1.76,0.5),WHITE)
+    # baseball-BAT body: barrel wide up top (where the face is), tapering to a narrow handle base (Fortnite look)
+    cone(0.38,2.1,(0,1.75,0),WOOD,r2=0.54); sph(0.54,(0,2.86,0),(1,0.76,1),WOOD)
+    cyl(0.43,0.42,(0,1.12,0),CLOTH)                      # white cloth wrap (lower body)
+    # big angry eyes + brows + highlights (up on the barrel)
+    for ex in (-0.24,0.24):
+        sph(0.2,(ex,2.36,0.42),m=WHITE); sph(0.1,(ex*0.9,2.34,0.56),m=BLACK); sph(0.045,(ex*0.9-0.05,2.42,0.62),m=WHITE)
+        box(0.36,0.1,0.1,(ex,2.62,0.42),BROW,rz=(0.55 if ex<0 else -0.55))
+    # big shouting mouth + teeth
+    sph(0.3,(0,1.96,0.44),(1.15,0.95,0.55),MOUTH)
+    box(0.42,0.09,0.05,(0,2.14,0.6),WHITE); box(0.42,0.09,0.05,(0,1.8,0.6),WHITE)
+    # thin arms + hands
     for s in (-1,1):
-        cyl(0.12,0.72,(s*0.56,1.75,0),WOODD,rot=(0,s*0.9,0)); sph(0.16,(s*0.78,1.28,0),m=WOODD)
-    cyl(0.13,1.1,(0.85,1.5,0.2),WOODD,rot=(math.radians(30),0,0))
+        cyl(0.13,0.85,(s*0.62,1.95,0),WOODD,rot=(0,s*0.9,0)); sph(0.17,(s*0.84,1.45,0),m=WOODD)
+    # big baseball bat in hand
+    cone(0.09,1.5,(0.98,1.65,0.2),BATM,rot=(math.radians(26),0,0),r2=0.19)
+    # thin legs + feet
     for s in (-1,1):
-        cyl(0.14,0.7,(s*0.24,0.45,0),WOODD); box(0.24,0.15,0.46,(s*0.24,0.1,0.12),WOODD)
+        cyl(0.15,0.78,(s*0.26,0.5,0),WOODD); box(0.28,0.16,0.5,(s*0.26,0.1,0.14),WOODD)
 
 def build_tralalero():
     # streamlined torpedo shark body (long snout->tail), belly, pointed snout
