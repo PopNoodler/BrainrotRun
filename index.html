@@ -153,12 +153,12 @@
   <button class="btn2" id="quitBtn">🏠 QUIT TO MENU</button>
 </div>
 
-<div id="verTag">BRAINROT RUSH 3D v59</div>
+<div id="verTag">BRAINROT RUSH 3D v60</div>
 <div id="err" style="position:fixed;left:8px;right:8px;bottom:24px;z-index:30;display:none;background:rgba(120,10,20,.92);color:#fff;font:600 12px monospace;padding:8px 12px;border-radius:8px;white-space:pre-wrap"></div>
 
 <script type="module">
 import * as THREE from 'three';
-const GAME_VERSION='v59';
+const GAME_VERSION='v60';
 const el=id=>document.getElementById(id);
 const setLS=(k,v)=>{ try{ localStorage.setItem(k,v); }catch(e){} };   // safe write (Safari private mode throws on setItem)
 const reduceMotion=(()=>{ try{ return matchMedia('(prefers-reduced-motion: reduce)').matches; }catch(e){ return false; } })();   // a11y: damp shake + FOV kick
@@ -347,8 +347,8 @@ function buildBombardiro(){ const g=new THREE.Group();
 // -- Lirilì Larilà: cactus-elephant in sandals --
 function buildLirili(){ const g=new THREE.Group();
   const body=part(new THREE.CapsuleGeometry(0.6,1.35,6,18), CM.cactus, 0,1.7,0); g.add(body);
-  for(let i=0;i<6;i++){ const a=i*Math.PI/3; g.add(part(new THREE.CylinderGeometry(0.045,0.045,1.7,6), CM.cactusD, Math.cos(a)*0.58,1.6,Math.sin(a)*0.58)); }
-  for(let i=0;i<10;i++){ const a=(i*2.399); const h=1.0+((i*0.14)%1.4); const sp=part(new THREE.ConeGeometry(0.04,0.16,5), CM.spine, Math.cos(a)*0.62,h,Math.sin(a)*0.62); sp.rotation.z=Math.PI/2; sp.rotation.y=-a; g.add(sp); }
+  for(let i=0;i<8;i++){ const a=i*Math.PI/4; g.add(part(new THREE.CylinderGeometry(0.07,0.07,1.75,6), CM.cactusD, Math.cos(a)*0.57,1.6,Math.sin(a)*0.57)); }   // pronounced cactus ribs
+  for(let i=0;i<16;i++){ const a=(i*2.399); const h=0.95+((i*0.13)%1.5); const sp=part(new THREE.ConeGeometry(0.045,0.18,5), CM.spine, Math.cos(a)*0.63,h,Math.sin(a)*0.63); sp.rotation.z=Math.PI/2; sp.rotation.y=-a; g.add(sp); }   // more spines
   for(const s of [-1,1]){ g.add(part(new THREE.CapsuleGeometry(0.15,0.5,4,8), CM.cactus, s*0.72,1.75,0));
     g.add(part(new THREE.CapsuleGeometry(0.13,0.4,4,8), CM.cactus, s*0.92,2.15,0)); }
   const head=part(new THREE.SphereGeometry(0.56,20,14), CM.ele, 0,2.85,0.05); head.scale.set(1,0.92,0.95); g.add(head);

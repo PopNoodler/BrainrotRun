@@ -25,6 +25,8 @@ BLUE=mat('blue',(0.25,0.5,0.75)); BELLY=mat('belly',(0.88,0.9,0.92))
 TOOTH=mat('tooth',(0.96,0.96,0.94)); SNEAK=mat('sneak',(0.18,0.43,0.94)); SOLE=mat('sole',(0.95,0.95,0.95))
 CROC=mat('croc',(0.3,0.48,0.23)); CROCD=mat('crocD',(0.2,0.35,0.16)); CROCB=mat('crocB',(0.85,0.82,0.66))
 METAL=mat('metal',(0.54,0.57,0.6)); BOOT=mat('boot',(0.1,0.1,0.12))
+CACT=mat('cact',(0.3,0.6,0.27)); CACTD=mat('cactD',(0.2,0.44,0.17)); SPINE=mat('spine',(0.9,0.88,0.56))
+ELE=mat('ele',(0.35,0.63,0.31)); TUSK=mat('tusk',(0.95,0.93,0.87)); SKIN=mat('skin',(0.82,0.6,0.44))
 
 def T(x,y,z): return (x, -z, y)          # three.js (Y-up, faces +Z) -> Blender (Z-up, faces -Y)
 def setm(o,m): o.data.materials.clear(); o.data.materials.append(m)
@@ -108,7 +110,29 @@ def build_bombardiro():
     for s in (-1,1):
         cyl(0.17,0.9,(s*0.3,0.5,0),CROC); box(0.3,0.2,0.6,(s*0.3,0.12,0.16),BOOT)
 
-{'sahur':build_sahur,'tralalero':build_tralalero,'bombardiro':build_bombardiro}.get(NAME, build_sahur)()
+def build_lirili():
+    # cactus torso + ridge lines + spines
+    cyl(0.6,1.35,(0,1.7,0),CACT); sph(0.6,(0,1.02,0),m=CACT); sph(0.6,(0,2.38,0),m=CACT)
+    for i in range(8):
+        a=i*math.pi/4; cyl(0.07,1.75,(math.cos(a)*0.57,1.6,math.sin(a)*0.57),CACTD)
+    for i in range(16):
+        a=i*2.399; h=0.95+((i*0.13)%1.5)
+        cone(0.045,0.18,(math.cos(a)*0.63,h,math.sin(a)*0.63),SPINE,rot=(0,0,math.radians(90)))
+    # cactus side-arms (up, saguaro)
+    for s in (-1,1):
+        cyl(0.15,0.5,(s*0.72,1.75,0),CACT); cyl(0.13,0.4,(s*0.92,2.15,0),CACT)
+    # elephant head + ears + trunk + tusks + eyes
+    sph(0.56,(0,2.85,0.05),(1,0.92,0.95),ELE)
+    for s in (-1,1): sph(0.42,(s*0.62,2.85,-0.05),(0.18,1,1),ELE)
+    for i in range(5): sph(0.25-i*0.032,(0,2.78-i*0.24,0.5+i*0.11),m=ELE)
+    for s in (-1,1): cone(0.08,0.45,(s*0.22,2.5,0.5),TUSK,rot=(math.radians(66),0,0))
+    for ex in (-0.3,0.3):
+        sph(0.12,(ex,3.0,0.42),m=WHITE); sph(0.06,(ex,3.02,0.51),m=BLACK)
+    # legs + sandals
+    for s in (-1,1):
+        cyl(0.17,0.9,(s*0.3,0.5,0),CACT); box(0.28,0.14,0.5,(s*0.3,0.1,0.14),SKIN)
+
+{'sahur':build_sahur,'tralalero':build_tralalero,'bombardiro':build_bombardiro,'lirili':build_lirili}.get(NAME, build_sahur)()
 
 # ---- camera (track-to target) + light + workbench render ----
 bpy.ops.object.empty_add(location=(0,0,1.4)); tgt=bpy.context.active_object
