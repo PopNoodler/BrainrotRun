@@ -31,6 +31,7 @@ TIRE=mat('tire',(0.08,0.08,0.09)); TREAD=mat('tread',(0.03,0.03,0.04)); HUB=mat(
 FROG=mat('frog',(0.35,0.63,0.23)); FROGB=mat('frogB',(0.82,0.83,0.53)); SHOE=mat('shoe',(0.14,0.13,0.17))
 CUP=mat('cup',(0.55,0.39,0.27)); COFFEE=mat('coffee',(0.3,0.18,0.1)); FOAM=mat('foam',(0.96,0.92,0.83))
 BLADE=mat('blade',(0.75,0.78,0.82)); HILT=mat('hilt',(0.12,0.1,0.1))
+BANANA=mat('banana',(0.95,0.82,0.2)); BTIP=mat('btip',(0.3,0.22,0.1)); FUR=mat('fur',(0.5,0.35,0.22)); FACE=mat('face',(0.82,0.66,0.48))
 
 OFFX=0.0
 def T(x,y,z): return (x+OFFX, -z, y)     # three.js (Y-up, faces +Z) -> Blender (Z-up, faces -Y); OFFX spaces a lineup
@@ -175,7 +176,27 @@ def build_cappuccino():
     for s in (-1,1):
         cyl(0.14,0.7,(s*0.26,0.5,0),SKIN); box(0.28,0.18,0.5,(s*0.26,0.1,0.14),SHOE)
 
-BUILDS={'sahur':build_sahur,'tralalero':build_tralalero,'bombardiro':build_bombardiro,'lirili':build_lirili,'boneca':build_boneca,'cappuccino':build_cappuccino}
+def build_chimpanzini():
+    # TALL yellow banana body (column + rounded caps) + brown tip
+    cyl(0.4,1.5,(0,1.7,0),BANANA); sph(0.4,(0,0.98,0),m=BANANA); sph(0.4,(0,2.42,0),m=BANANA)
+    sph(0.13,(0,0.62,0),m=BTIP)                                   # bottom tip (brown)
+    for a in range(3):                                            # peel flaps splaying out at top
+        ang=(a-1)*0.7; cone(0.14,0.6,(math.sin(ang)*0.28,2.75,0.05),BANANA,rot=(math.radians(18)*(1 if a!=1 else 0),0,math.radians(-ang*38)))
+    # small monkey face patch (upper front) + ears
+    sph(0.32,(0,2.0,0.3),(1,1,0.55),FACE)
+    for s in (-1,1): sph(0.13,(s*0.36,2.05,0.06),m=FUR)
+    for s in (-1,1): sph(0.08,(s*0.36,2.05,0.1),m=FACE)
+    for ex in (-0.14,0.14):
+        sph(0.09,(ex,2.1,0.45),m=WHITE); sph(0.045,(ex,2.12,0.5),m=BLACK)
+    sph(0.16,(0,1.9,0.46),(1,0.7,0.6),FACE)                       # muzzle
+    sph(0.1,(0,1.85,0.55),(1.1,0.5,0.5),MOUTH)
+    for s in (-1,1): sph(0.035,(s*0.06,1.96,0.58),m=BLACK)        # nostrils
+    # brown monkey arms + legs + feet
+    for s in (-1,1): cyl(0.09,0.6,(s*0.44,1.55,0.05),FUR,rot=(0,0,math.radians(s*22)))
+    for s in (-1,1):
+        cyl(0.12,0.6,(s*0.22,0.55,0),FUR); box(0.24,0.14,0.44,(s*0.22,0.14,0.14),FUR)
+
+BUILDS={'sahur':build_sahur,'tralalero':build_tralalero,'bombardiro':build_bombardiro,'lirili':build_lirili,'boneca':build_boneca,'cappuccino':build_cappuccino,'chimpanzini':build_chimpanzini}
 if NAME=='lineup':
     for nm,ox in [('sahur',-6.4),('tralalero',-3.2),('bombardiro',0),('lirili',3.2),('boneca',6.4)]:
         OFFX=ox; BUILDS[nm]()
