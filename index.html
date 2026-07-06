@@ -153,12 +153,12 @@
   <button class="btn2" id="quitBtn">🏠 QUIT TO MENU</button>
 </div>
 
-<div id="verTag">BRAINROT RUSH 3D v64</div>
+<div id="verTag">BRAINROT RUSH 3D v65</div>
 <div id="err" style="position:fixed;left:8px;right:8px;bottom:24px;z-index:30;display:none;background:rgba(120,10,20,.92);color:#fff;font:600 12px monospace;padding:8px 12px;border-radius:8px;white-space:pre-wrap"></div>
 
 <script type="module">
 import * as THREE from 'three';
-const GAME_VERSION='v64';
+const GAME_VERSION='v65';
 const el=id=>document.getElementById(id);
 const setLS=(k,v)=>{ try{ localStorage.setItem(k,v); }catch(e){} };   // safe write (Safari private mode throws on setItem)
 const reduceMotion=(()=>{ try{ return matchMedia('(prefers-reduced-motion: reduce)').matches; }catch(e){ return false; } })();   // a11y: damp shake + FOV kick
@@ -643,7 +643,8 @@ function activatePU(t){ if(t==='magnet')pMag=8+UPG.magnet*2; else if(t==='x2')pX
 function collectCoin(c){ c.got=true; bumpCombo(); coinPulse=0.13;
   const m=comboMult(), val=Math.round(m*(pX2>0?2:1)*(1+UPG.coinboost*0.1)*(c.val||1)); coins$+=val;
   if(c.gem){ sPow(); burst(c.mesh.position.x,c.mesh.position.y,c.z,10,0x6cf0ff,5,0.8); popup(c.mesh.position.x,c.mesh.position.y+0.7,c.z,'💎 +'+val,'#6cf0ff'); }
-  else { sCoin(); burst(c.mesh.position.x,c.mesh.position.y,c.z,4,0xffe14d,3.2,0.6); if(val>1) popup(c.mesh.position.x, c.mesh.position.y+0.6, c.z, '+'+val, m>1?'#ff9d3d':'#ffe14d'); }
+  else { const cp=880*(1+(m-1)*0.14); tone(cp,0.07,'square',0.09,cp*1.5);   // coin pitch rises with combo (x1=880Hz → x5≈1373Hz)
+    burst(c.mesh.position.x,c.mesh.position.y,c.z,4,0xffe14d,3.2,0.6); if(val>1) popup(c.mesh.position.x, c.mesh.position.y+0.6, c.z, '+'+val, m>1?'#ff9d3d':'#ffe14d'); }
   poolCoin(c); }
 
 // ============ input ============
