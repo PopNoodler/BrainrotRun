@@ -198,8 +198,9 @@ def build_chimpanzini():
 
 BUILDS={'sahur':build_sahur,'tralalero':build_tralalero,'bombardiro':build_bombardiro,'lirili':build_lirili,'boneca':build_boneca,'cappuccino':build_cappuccino,'chimpanzini':build_chimpanzini}
 if NAME=='lineup':
-    for nm,ox in [('sahur',-6.4),('tralalero',-3.2),('bombardiro',0),('lirili',3.2),('boneca',6.4)]:
-        OFFX=ox; BUILDS[nm]()
+    names=['sahur','tralalero','bombardiro','lirili','boneca','cappuccino','chimpanzini']
+    for i,nm in enumerate(names):
+        OFFX=(i-(len(names)-1)/2)*3.1; BUILDS[nm]()
     OFFX=0
 else:
     BUILDS.get(NAME, build_sahur)()
@@ -207,14 +208,14 @@ else:
 # ---- camera (track-to target) + light + workbench render ----
 LINE = NAME=='lineup'
 bpy.ops.object.empty_add(location=(0,0,1.4)); tgt=bpy.context.active_object
-bpy.ops.object.camera_add(location=(0,-19,3.2) if LINE else (4.2,-5.6,2.4)); cam=bpy.context.active_object
+bpy.ops.object.camera_add(location=(0,-25,3.4) if LINE else (4.2,-5.6,2.4)); cam=bpy.context.active_object
 tc=cam.constraints.new('TRACK_TO'); tc.target=tgt; tc.track_axis='TRACK_NEGATIVE_Z'; tc.up_axis='UP_Y'
-cam.data.lens=42 if LINE else 52; bpy.context.scene.camera=cam
+cam.data.lens=40 if LINE else 52; bpy.context.scene.camera=cam
 bpy.ops.object.light_add(type='SUN',location=(-4,-6,9)); bpy.context.active_object.data.energy=3.2
 sc=bpy.context.scene
 sc.render.engine='BLENDER_WORKBENCH'
 sc.display.shading.light='STUDIO'; sc.display.shading.color_type='MATERIAL'
-sc.render.resolution_x=1100 if LINE else 400; sc.render.resolution_y=360 if LINE else 460
+sc.render.resolution_x=1400 if LINE else 400; sc.render.resolution_y=340 if LINE else 460
 sc.world=bpy.data.worlds.new('w'); sc.world.use_nodes=True
 sc.world.node_tree.nodes['Background'].inputs['Color'].default_value=(0.16,0.11,0.29,1)
 root=None
