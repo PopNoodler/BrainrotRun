@@ -153,12 +153,12 @@
   <button class="btn2" id="quitBtn">🏠 QUIT TO MENU</button>
 </div>
 
-<div id="verTag">BRAINROT RUSH 3D v60</div>
+<div id="verTag">BRAINROT RUSH 3D v61</div>
 <div id="err" style="position:fixed;left:8px;right:8px;bottom:24px;z-index:30;display:none;background:rgba(120,10,20,.92);color:#fff;font:600 12px monospace;padding:8px 12px;border-radius:8px;white-space:pre-wrap"></div>
 
 <script type="module">
 import * as THREE from 'three';
-const GAME_VERSION='v60';
+const GAME_VERSION='v61';
 const el=id=>document.getElementById(id);
 const setLS=(k,v)=>{ try{ localStorage.setItem(k,v); }catch(e){} };   // safe write (Safari private mode throws on setItem)
 const reduceMotion=(()=>{ try{ return matchMedia('(prefers-reduced-motion: reduce)').matches; }catch(e){ return false; } })();   // a11y: damp shake + FOV kick
@@ -368,7 +368,7 @@ function buildBoneca(){ const g=new THREE.Group();
   for(const s of [-1,1]){ g.add(part(new THREE.SphereGeometry(0.24,14,10), CM.frog, s*0.28,2.75,0));
     g.add(part(new THREE.SphereGeometry(0.18,14,10), M.white, s*0.28,2.8,0.08));
     g.add(part(new THREE.SphereGeometry(0.09,10,8), M.black, s*0.28,2.85,0.16)); }
-  const mouth=part(new THREE.SphereGeometry(0.3,14,10), CM.mouthD, 0,2.28,0.34); mouth.scale.set(1,0.32,0.4); g.add(mouth);
+  const mouth=part(new THREE.SphereGeometry(0.3,14,10), CM.mouthD, 0,2.26,0.42); mouth.scale.set(1.4,0.3,0.42); g.add(mouth);   // wide frog grin
   for(const s of [-1,1]){ const arm=part(new THREE.CapsuleGeometry(0.1,0.5,4,8), CM.frog, s*0.6,1.72,0.1); arm.rotation.z=s*0.5; g.add(arm); }
   const legs=[]; for(const s of [-1,1]){ const leg=new THREE.Group();
     leg.add(part(new THREE.CapsuleGeometry(0.15,0.7,4,10), CM.skin, 0,-0.35,0));

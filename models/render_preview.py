@@ -27,6 +27,8 @@ CROC=mat('croc',(0.3,0.48,0.23)); CROCD=mat('crocD',(0.2,0.35,0.16)); CROCB=mat(
 METAL=mat('metal',(0.54,0.57,0.6)); BOOT=mat('boot',(0.1,0.1,0.12))
 CACT=mat('cact',(0.3,0.6,0.27)); CACTD=mat('cactD',(0.2,0.44,0.17)); SPINE=mat('spine',(0.9,0.88,0.56))
 ELE=mat('ele',(0.35,0.63,0.31)); TUSK=mat('tusk',(0.95,0.93,0.87)); SKIN=mat('skin',(0.82,0.6,0.44))
+TIRE=mat('tire',(0.08,0.08,0.09)); TREAD=mat('tread',(0.03,0.03,0.04)); HUB=mat('hub',(0.57,0.58,0.63))
+FROG=mat('frog',(0.35,0.63,0.23)); FROGB=mat('frogB',(0.82,0.83,0.53)); SHOE=mat('shoe',(0.14,0.13,0.17))
 
 def T(x,y,z): return (x, -z, y)          # three.js (Y-up, faces +Z) -> Blender (Z-up, faces -Y)
 def setm(o,m): o.data.materials.clear(); o.data.materials.append(m)
@@ -48,6 +50,9 @@ def box(w,h,d,loc,m=WOOD,rz=0):
     o.scale=(w,d,h)
     if rz: o.rotation_euler=(0,0,rz)
     setm(o,m); return o
+def torus(R,r,loc,m):   # three.js torus (XY plane, hole along Z) -> blender wheel facing +/-Y
+    bpy.ops.mesh.primitive_torus_add(major_radius=R,minor_radius=r,location=T(*loc))
+    o=bpy.context.active_object; o.rotation_euler=(math.radians(90),0,0); bpy.ops.object.shade_smooth(); setm(o,m); return o
 
 def build_sahur():
     cyl(0.46,1.9,(0,1.75,0),WOOD); sph(0.46,(0,0.85,0),m=WOOD); sph(0.47,(0,2.78,0),(1,0.72,1),WOOD)
@@ -132,7 +137,22 @@ def build_lirili():
     for s in (-1,1):
         cyl(0.17,0.9,(s*0.3,0.5,0),CACT); box(0.28,0.14,0.5,(s*0.3,0.1,0.14),SKIN)
 
-{'sahur':build_sahur,'tralalero':build_tralalero,'bombardiro':build_bombardiro,'lirili':build_lirili}.get(NAME, build_sahur)()
+def build_boneca():
+    torus(0.62,0.32,(0,1.5,0),TIRE)
+    for i in range(12):
+        a=i*math.pi/6; box(0.14,0.14,0.46,(math.cos(a)*0.94,1.5+math.sin(a)*0.94,0),TREAD)
+    cyl(0.28,0.66,(0,1.5,0),HUB,rot=(math.radians(90),0,0))
+    sph(0.48,(0,2.4,0.05),(1.05,0.95,0.9),FROG)          # frog head
+    sph(0.36,(0,2.25,0.3),(1,0.68,0.7),FROGB)            # chin/belly
+    for s in (-1,1):                                     # bulging eyes on top
+        sph(0.24,(s*0.28,2.75,0),m=FROG); sph(0.18,(s*0.28,2.8,0.08),m=WHITE); sph(0.09,(s*0.28,2.85,0.16),m=BLACK)
+    sph(0.3,(0,2.28,0.34),(1,0.32,0.4),MOUTH)            # wide mouth
+    for s in (-1,1):
+        cyl(0.1,0.5,(s*0.6,1.72,0.1),FROG,rot=(0,0,math.radians(s*55)))
+    for s in (-1,1):
+        cyl(0.15,0.7,(s*0.26,0.5,0),SKIN); box(0.28,0.18,0.55,(s*0.26,0.1,0.14),SHOE)
+
+{'sahur':build_sahur,'tralalero':build_tralalero,'bombardiro':build_bombardiro,'lirili':build_lirili,'boneca':build_boneca}.get(NAME, build_sahur)()
 
 # ---- camera (track-to target) + light + workbench render ----
 bpy.ops.object.empty_add(location=(0,0,1.4)); tgt=bpy.context.active_object
