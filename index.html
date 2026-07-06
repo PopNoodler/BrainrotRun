@@ -155,12 +155,12 @@
   <button class="btn2" id="quitBtn">🏠 QUIT TO MENU</button>
 </div>
 
-<div id="verTag">BRAINROT RUSH 3D v77</div>
+<div id="verTag">BRAINROT RUSH 3D v78</div>
 <div id="err" style="position:fixed;left:8px;right:8px;bottom:24px;z-index:30;display:none;background:rgba(120,10,20,.92);color:#fff;font:600 12px monospace;padding:8px 12px;border-radius:8px;white-space:pre-wrap"></div>
 
 <script type="module">
 import * as THREE from 'three';
-const GAME_VERSION='v77';
+const GAME_VERSION='v78';
 const el=id=>document.getElementById(id);
 const setLS=(k,v)=>{ try{ localStorage.setItem(k,v); }catch(e){} };   // safe write (Safari private mode throws on setItem)
 const reduceMotion=(()=>{ try{ return matchMedia('(prefers-reduced-motion: reduce)').matches; }catch(e){ return false; } })();   // a11y: damp shake + FOV kick
@@ -224,12 +224,12 @@ scene.add(flyer); flyer.position.set(-40,24,75); flyer.visible=false; let flyerX
 // catchphrase + themed floating props + zone banner. (Builders are hoisted fn declarations.)
 const BIOMES=[
   {name:'TUNG TUNG SAHUR',       emoji:'🪵', accent:'#e8b060', bg:0x241635, fog:0x2a1c40, ground:0x3a2f28, build:[0x6b4a2a,0x8a5c34,0x5a3fb0,0x9a6b3c,0x4a3520], giant:buildSahur,      gs:3.4, anim:'drum', quip:'TUNG TUNG TUNG SAHUR! 🥁',        props:['🪵','🥁','🌙']},
-  {name:'TRALALERO TRALALA',     emoji:'🦈', accent:'#4fd0ff', bg:0x0e2a4a, fog:0x14406a, ground:0x1d3a55, build:[0x2f6fbf,0x4fd0ff,0x1e4f8a,0x63e0e8,0x2255aa], giant:buildTralalero,  gs:3.0, anim:'sway', quip:'TRALALERO TRALALA! 🦈👟',        props:['🦈','🌊','👟']},
-  {name:'BOMBARDIRO CROCODILO',  emoji:'🐊', accent:'#8bbf5a', bg:0x2c3a2a, fog:0x3d5038, ground:0x37452e, build:[0x4c7a3a,0x8a9099,0x33582a,0x6b7a4a,0x556b2f], giant:buildBombardiro, gs:3.0, anim:'bob', quip:'BOMBARDIRO CROCODILO! 🐊✈️',     props:['🐊','✈️','💥']},
-  {name:'LIRILÌ LARILÀ',         emoji:'🌵', accent:'#ffd24d', bg:0xc27a35, fog:0xd89a55, ground:0xb08850, build:[0x4e9a44,0xd4a017,0xc06a2a,0x8a5c34,0x6aa84f], giant:buildLirili,     gs:4.2, anim:'sway', quip:'LIRILÌ LARILÀ~ 🐘🌵',           props:['🌵','🐘','☀️']},
-  {name:'BONECA AMBALABU',       emoji:'🐸', accent:'#7ed957', bg:0x14301f, fog:0x1d4028, ground:0x2a4030, build:[0x3d8a2a,0x141418,0x5aa03a,0x2a5a20,0x9195a0], giant:buildBoneca,     gs:2.9, anim:'hop', quip:'BONECA AMBALABU! 🐸🛞',          props:['🐸','🛞','🪷']},
-  {name:'CAPPUCCINO ASSASSINO',  emoji:'☕', accent:'#f5ebd4', bg:0x2e1f16, fog:0x402c1e, ground:0x4d3421, build:[0x8c6345,0xf5ebd4,0x4d2e1a,0xa8795a,0x6b4a30], giant:buildCappuccino, gs:2.7, anim:'bob', quip:'CAPPUCCINO ASSASSINO! ☕🗡️',     props:['☕','🗡️','🥐']},
-  {name:'CHIMPANZINI BANANINI',  emoji:'🍌', accent:'#ffe14d', bg:0x1a3a14, fog:0x245422, ground:0x2e5424, build:[0xf2d133,0x4e9a44,0x7a5230,0xffe14d,0x3a7a30], giant:buildChimpanzini,gs:3.1, anim:'hop', quip:'CHIMPANZINI BANANINI! 🐒🍌',      props:['🍌','🐒','🌴']},
+  {name:'TRALALERO TRALALA',     emoji:'🦈', accent:'#4fd0ff', bg:0x0e2a4a, fog:0x14406a, ground:0x1d3a55, build:[0x2f6fbf,0x4fd0ff,0x1e4f8a,0x63e0e8,0x2255aa], giant:buildTralalero,  gs:3.0, anim:'sway', motif:[523,659,587,784], quip:'TRALALERO TRALALA! 🦈👟',        props:['🦈','🌊','👟']},
+  {name:'BOMBARDIRO CROCODILO',  emoji:'🐊', accent:'#8bbf5a', bg:0x2c3a2a, fog:0x3d5038, ground:0x37452e, build:[0x4c7a3a,0x8a9099,0x33582a,0x6b7a4a,0x556b2f], giant:buildBombardiro, gs:3.0, anim:'bob', motif:[880,740,622,523], quip:'BOMBARDIRO CROCODILO! 🐊✈️',     props:['🐊','✈️','💥']},
+  {name:'LIRILÌ LARILÀ',         emoji:'🌵', accent:'#ffd24d', bg:0xc27a35, fog:0xd89a55, ground:0xb08850, build:[0x4e9a44,0xd4a017,0xc06a2a,0x8a5c34,0x6aa84f], giant:buildLirili,     gs:4.2, anim:'sway', motif:[587,880,784,988], quip:'LIRILÌ LARILÀ~ 🐘🌵',           props:['🌵','🐘','☀️']},
+  {name:'BONECA AMBALABU',       emoji:'🐸', accent:'#7ed957', bg:0x14301f, fog:0x1d4028, ground:0x2a4030, build:[0x3d8a2a,0x141418,0x5aa03a,0x2a5a20,0x9195a0], giant:buildBoneca,     gs:2.9, anim:'hop', motif:[392,784,392,784], quip:'BONECA AMBALABU! 🐸🛞',          props:['🐸','🛞','🪷']},
+  {name:'CAPPUCCINO ASSASSINO',  emoji:'☕', accent:'#f5ebd4', bg:0x2e1f16, fog:0x402c1e, ground:0x4d3421, build:[0x8c6345,0xf5ebd4,0x4d2e1a,0xa8795a,0x6b4a30], giant:buildCappuccino, gs:2.7, anim:'bob', motif:[660,660,990,660], quip:'CAPPUCCINO ASSASSINO! ☕🗡️',     props:['☕','🗡️','🥐']},
+  {name:'CHIMPANZINI BANANINI',  emoji:'🍌', accent:'#ffe14d', bg:0x1a3a14, fog:0x245422, ground:0x2e5424, build:[0xf2d133,0x4e9a44,0x7a5230,0xffe14d,0x3a7a30], giant:buildChimpanzini,gs:3.1, anim:'hop', motif:[700,900,700,1100], quip:'CHIMPANZINI BANANINI! 🐒🍌',      props:['🍌','🐒','🌴']},
 ];
 let biomeIdx=-1; const _bg=new THREE.Color(0x241635), _fog=new THREE.Color(0x2a1c40); const _tmpC=new THREE.Color();
 var giantOf=null, curGiant=null, floaties=null, propMats=null, zoneScenery=null, curScn=null, zoneTO=0;   // late-bound zone actors (created after the builders' materials exist)
@@ -240,7 +240,7 @@ function setBiome(i,announce){ biomeIdx=i; const b=BIOMES[i]; _bg.setHex(b.bg); 
     if(curGiant){ curGiant.visible=true; curGiant.position.z=55+Math.random()*40; curGiant.position.x=(Math.random()<0.5?-1:1)*(11.5+Math.random()*2.5); } }
   if(floaties&&propMats){ for(const f of floaties) f.material=propMats[i][(Math.random()*propMats[i].length)|0]; }   // zone-themed floating props
   if(announce && state===PLAY){ const zb=el('zone'); zb.textContent=b.emoji+' '+b.name+' ZONE'; zb.style.color=b.accent;
-    zb.style.opacity='1'; zb.style.transform='scale(1.06)'; sQuip();
+    zb.style.opacity='1'; zb.style.transform='scale(1.06)'; playMotif(b);
     burst(0,4,8,18,parseInt(b.accent.slice(1),16),8,1.0);   // zone-entry confetti in the zone's color
     clearTimeout(zoneTO); zoneTO=setTimeout(()=>{ zb.style.opacity='0'; zb.style.transform='scale(0.9)'; },1900); } }
 setBiome(0,false);
@@ -737,6 +737,8 @@ const sPow=()=>{tone(660,0.09,'square',0.12,1320);setTimeout(()=>tone(1040,0.12,
 const sShield=()=>tone(300,0.28,'sine',0.17,900);
 const sQuip=()=>{tone(620,0.08,'square',0.1,930);setTimeout(()=>tone(930,0.1,'square',0.09,1240),70);};   // zone/catchphrase jingle
 const sTung=()=>{tone(85,0.14,'triangle',0.22,55);setTimeout(()=>tone(85,0.14,'triangle',0.22,55),150);setTimeout(()=>tone(85,0.16,'triangle',0.24,50),300);};   // the signature three drum hits
+function sMotif(seq){ seq.forEach((f,i)=>{ if(f) setTimeout(()=>tone(f,0.11,'square',0.1,f*1.25), i*115); }); }   // short catchy melody
+function playMotif(b){ if(b&&b.motif) sMotif(b.motif); else sTung(); }   // each character's own jingle (Sahur = his drum)
 // ---- procedural background music (bass quarters + pentatonic arp, 4-bar loop) ----
 const MSCALE=[0,3,5,7,10], MBASS=[0,-5,3,-2], MROOT=196;   // G minor pentatonic; bar roots G/D/Bb/F
 let musIntv=null, musStep=0;
@@ -946,7 +948,7 @@ function update(dt){
     else if(an==='sway'){ curGiant.position.y=Math.sin(tRun*1.1)*0.12; curGiant.rotation.z=Math.sin(tRun*0.9)*0.07; }   // swimming/majestic sway
     else curGiant.position.y=Math.sin(tRun*1.2)*0.15;
     if(curGiant.position.z< -25){ curGiant.position.z+=GIANT_SPAN; curGiant.position.x=(Math.random()<0.5?-1:1)*(11.5+Math.random()*2.5); }
-    if(quipT<=0 && gz>6 && curGiant.position.z<=6){ quipT=6; popup(curGiant.position.x>0?2.4:-2.4,4.6,5,BIOMES[biomeIdx].quip,BIOMES[biomeIdx].accent); sQuip(); } }
+    if(quipT<=0 && gz>6 && curGiant.position.z<=6){ quipT=6; popup(curGiant.position.x>0?2.4:-2.4,4.6,5,BIOMES[biomeIdx].quip,BIOMES[biomeIdx].accent); playMotif(BIOMES[biomeIdx]); } }
   if(quipT>0)quipT-=dt;
   for(const f of floaties){ f.position.z-=dz*0.55; f.position.y=f.userData.by+Math.sin(tRun*0.8+f.userData.ph)*0.5; if(f.position.z< -15) f.position.z+=192; }   // themed props drift by (parallax)
   flyer.visible=(biomeIdx===2);   // Bombardiro's bomber only patrols his own zone
