@@ -153,12 +153,12 @@
   <button class="btn2" id="quitBtn">🏠 QUIT TO MENU</button>
 </div>
 
-<div id="verTag">BRAINROT RUSH 3D v71</div>
+<div id="verTag">BRAINROT RUSH 3D v72</div>
 <div id="err" style="position:fixed;left:8px;right:8px;bottom:24px;z-index:30;display:none;background:rgba(120,10,20,.92);color:#fff;font:600 12px monospace;padding:8px 12px;border-radius:8px;white-space:pre-wrap"></div>
 
 <script type="module">
 import * as THREE from 'three';
-const GAME_VERSION='v71';
+const GAME_VERSION='v72';
 const el=id=>document.getElementById(id);
 const setLS=(k,v)=>{ try{ localStorage.setItem(k,v); }catch(e){} };   // safe write (Safari private mode throws on setItem)
 const reduceMotion=(()=>{ try{ return matchMedia('(prefers-reduced-motion: reduce)').matches; }catch(e){ return false; } })();   // a11y: damp shake + FOV kick
@@ -211,9 +211,38 @@ for(let i=0;i<26;i++){ const d=new THREE.Mesh(new THREE.PlaneGeometry(0.35,3),da
 // buildings scenery (recycled)
 const bMats=[0x5a3fb0,0x8a5cff,0xe0326e,0x4fd0ff,0xff7a3d].map(c=>new THREE.MeshLambertMaterial({color:c}));
 const buildings=[];
-for(let i=0;i<24;i++){ const bh=8+Math.random()*22, side=i%2?1:-1;
+for(let i=0;i<18;i++){ const bh=8+Math.random()*22, side=i%2?1:-1;
   const b=new THREE.Mesh(new THREE.BoxGeometry(4+Math.random()*3,bh,4+Math.random()*4), bMats[i%bMats.length]);
-  b.position.set(side*(11+Math.random()*8), bh/2-1, i*11); scene.add(b); buildings.push(b); }
+  b.position.set(side*(13+Math.random()*7), bh/2-1, i*15); scene.add(b); buildings.push(b); }
+// ---- brainrot billboards (character references lining the track) — recycled ----
+const SIGNS=[
+  ['🦈','TRALALERO',0x2f6fbf], ['🐊','BOMBARDIRO',0x4c7a3a], ['🌵','LIRILÌ LARILÀ',0x4e9a44],
+  ['🐸','BONECA',0x3d8a2a], ['☕','CAPPUCCINO',0x7a5230], ['🍌','CHIMPANZINI',0xd4a017],
+  ['🪵','TUNG TUNG SAHUR',0x9a6b34], ['🧠','BRAINROT',0xc0286a], ['🇮🇹','ITALIA BRAINROT',0x2f6f3a],
+];
+function signTexture(emoji,name,color){ const c=document.createElement('canvas'); c.width=c.height=256; const g=c.getContext('2d');
+  g.fillStyle='#'+color.toString(16).padStart(6,'0'); g.fillRect(0,0,256,256);
+  g.fillStyle='rgba(255,255,255,0.16)'; g.fillRect(10,10,236,236);
+  g.fillStyle='rgba(0,0,0,0.30)'; g.fillRect(0,0,256,14); g.fillRect(0,242,256,14); g.fillRect(0,0,14,256); g.fillRect(242,0,14,256);
+  g.textAlign='center'; g.textBaseline='middle'; g.font='120px serif'; g.fillText(emoji,128,108);
+  g.fillStyle='#fff'; g.font='bold 30px Arial'; g.fillText(name,128,198);
+  return new THREE.CanvasTexture(c); }
+const signMats=SIGNS.map(s=>new THREE.MeshBasicMaterial({map:signTexture(s[0],s[1],s[2])}));   // unlit so signs pop in any biome
+const postMat=new THREE.MeshLambertMaterial({color:0x2a2438});
+const panelGeo=new THREE.BoxGeometry(4.4,3.2,0.25), postGeo=new THREE.BoxGeometry(0.35,5,0.35);
+const billboards=[];
+for(let i=0;i<12;i++){ const side=i%2?1:-1, grp=new THREE.Group();
+  const panel=new THREE.Mesh(panelGeo, signMats[i%signMats.length]); panel.position.y=6.4;
+  const post=new THREE.Mesh(postGeo, postMat); post.position.y=3.5;
+  grp.add(panel); grp.add(post); grp.rotation.y=side>0?-0.38:0.38;
+  grp.position.set(side*(9.6+Math.random()*2.5), 0, 9+i*11); scene.add(grp); billboards.push({grp,panel}); }
+// ---- background flying Bombardiro (croc-bomber) — loops across the sky ----
+const flyer=new THREE.Group();
+flyer.add(part(new THREE.CapsuleGeometry(0.5,2.4,4,8), new THREE.MeshLambertMaterial({color:0x4c7a3a}), 0,0,0, 0,0,Math.PI/2));   // fuselage horizontal
+flyer.add(part(new THREE.ConeGeometry(0.4,1.0,8), new THREE.MeshLambertMaterial({color:0x4c7a3a}), 1.6,0,0, 0,0,-Math.PI/2));      // croc snout (front)
+flyer.add(part(new THREE.BoxGeometry(0.5,0.12,3.4), new THREE.MeshLambertMaterial({color:0x8a9099}), 0,0,0));                       // wings
+flyer.add(part(new THREE.BoxGeometry(0.5,0.7,0.12), new THREE.MeshLambertMaterial({color:0x8a9099}), -1.4,0.3,0));                  // tail fin
+scene.add(flyer); flyer.position.set(-40,24,75); let flyerX=-40;
 
 // ============ biomes (visual progression every ~600m) ============
 const BIOMES=[
@@ -673,6 +702,7 @@ const MTUNE=[0,3,-2,5];   // per-biome transpose (Città / Tramonto / Notte Neon
 function musicTick(){ if(muted||musicOff){return;} const a=ac(); if(!a)return; const t=a.currentTime+0.03;
   const step=musStep%16, bar=(musStep/16|0)%MBASS.length, tune=MTUNE[Math.max(0,biomeIdx)%MTUNE.length], root=MROOT*Math.pow(2,(MBASS[bar]+tune)/12);
   if(step%4===0) playMus(root/2,0.34,'triangle',0.09,t);                                   // bass on quarters
+  if(step%4===0||step===10||step===12) playMus(78,0.12,'triangle',0.14,52);                // "tung tung tung" wooden drum pulse (Sahur's signature)
   if(step%2===0) playMus(root*Math.pow(2,MSCALE[(step/2)%MSCALE.length]/12),0.17,'square',0.035,t); // arp on 8ths
   musStep++; }
 function startMusic(){ if(musIntv||muted||musicOff)return; musStep=0; musIntv=setInterval(musicTick,150); }  // 100bpm 16ths
@@ -857,7 +887,9 @@ function update(dt){
   // recycle scenery
   for(const d of dashes){ d.position.z-=dz; if(d.position.z< -12) d.position.z+=234; }
   for(const t of ties){ t.position.z-=dz; if(t.position.z< -12) t.position.z+=TIE_N*TIE_SP; }
-  for(const b of buildings){ b.position.z-=dz; if(b.position.z< -14) b.position.z+=264; }
+  for(const b of buildings){ b.position.z-=dz; if(b.position.z< -14) b.position.z+=270; }
+  for(const bb of billboards){ bb.grp.position.z-=dz; if(bb.grp.position.z< -16){ bb.grp.position.z+=132; bb.panel.material=signMats[(Math.random()*signMats.length)|0]; } }   // cycle brainrot signs
+  flyerX+=(3+speed*0.09)*dt; if(flyerX>48) flyerX=-48; flyer.position.x=flyerX; flyer.rotation.y=Math.sin(tRun*0.4)*0.12;   // background croc-bomber drifting across the sky
   // player transform
   player.position.set(P.x, P.y, 0);
   const runcyc=Math.sin(tRun*speed*0.55);
