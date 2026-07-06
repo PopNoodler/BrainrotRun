@@ -153,12 +153,12 @@
   <button class="btn2" id="quitBtn">🏠 QUIT TO MENU</button>
 </div>
 
-<div id="verTag">BRAINROT RUSH 3D v61</div>
+<div id="verTag">BRAINROT RUSH 3D v62</div>
 <div id="err" style="position:fixed;left:8px;right:8px;bottom:24px;z-index:30;display:none;background:rgba(120,10,20,.92);color:#fff;font:600 12px monospace;padding:8px 12px;border-radius:8px;white-space:pre-wrap"></div>
 
 <script type="module">
 import * as THREE from 'three';
-const GAME_VERSION='v61';
+const GAME_VERSION='v62';
 const el=id=>document.getElementById(id);
 const setLS=(k,v)=>{ try{ localStorage.setItem(k,v); }catch(e){} };   // safe write (Safari private mode throws on setItem)
 const reduceMotion=(()=>{ try{ return matchMedia('(prefers-reduced-motion: reduce)').matches; }catch(e){ return false; } })();   // a11y: damp shake + FOV kick
@@ -847,7 +847,8 @@ addEventListener('error', e=>showErr(e.error||e.message));
 addEventListener('unhandledrejection', e=>showErr(e.reason));
 function animate(now){ let dt=(now-last)/1000; last=now; if(dt>0.05)dt=0.05;
   try{
-    if(state===MENU && player){ camera.position.set(0,3.4,-6.8); camera.lookAt(0,1.7,0); player.position.set(0,0,0); player.rotation.y+=dt*0.6; }
+    if(state===MENU && player){ camera.position.set(0,3.4,-6.8); camera.lookAt(0,1.7,0);
+      player.position.set(0, Math.sin(now*0.0022)*0.09, 0); player.rotation.y+=dt*0.6; player.rotation.z=Math.sin(now*0.0016)*0.05; }   // gentle idle bob + sway to show off the model
     if(state===PLAY&&!paused) update(dt);
     if(state===DYING) deathTick(dt);
     if(!paused){ updateParts(dt); updatePops(dt); }
