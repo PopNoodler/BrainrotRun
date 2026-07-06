@@ -153,12 +153,12 @@
   <button class="btn2" id="quitBtn">🏠 QUIT TO MENU</button>
 </div>
 
-<div id="verTag">BRAINROT RUSH 3D v69</div>
+<div id="verTag">BRAINROT RUSH 3D v70</div>
 <div id="err" style="position:fixed;left:8px;right:8px;bottom:24px;z-index:30;display:none;background:rgba(120,10,20,.92);color:#fff;font:600 12px monospace;padding:8px 12px;border-radius:8px;white-space:pre-wrap"></div>
 
 <script type="module">
 import * as THREE from 'three';
-const GAME_VERSION='v69';
+const GAME_VERSION='v70';
 const el=id=>document.getElementById(id);
 const setLS=(k,v)=>{ try{ localStorage.setItem(k,v); }catch(e){} };   // safe write (Safari private mode throws on setItem)
 const reduceMotion=(()=>{ try{ return matchMedia('(prefers-reduced-motion: reduce)').matches; }catch(e){ return false; } })();   // a11y: damp shake + FOV kick
@@ -805,12 +805,15 @@ function update(dt){
   // move obstacles/coins toward player
   const dz=speed*dt;
   for(const o of obstacles){ if(o.dead)continue; const pz=o.z; o.z-=dz; o.z2-=dz; o.mesh.position.z-=dz;
-    // near-miss: a train/truck front sweeps past you in an ADJACENT lane while you're on the ground → thrill bonus
-    if(!o.nm && pz>0 && o.z<=0 && (o.type==='train'||o.type==='truck')){ o.nm=true;
-      const dxl=Math.abs(P.x-laneOf(o.lane));
-      if(dxl>0.95 && dxl<LANEX+1.0 && P.y<o.top-0.4){
+    // skill rewards as an obstacle front crosses the player plane
+    if(!o.nm && pz>0 && o.z<=0){ o.nm=true; const dxl=Math.abs(P.x-laneOf(o.lane));
+      if((o.type==='train'||o.type==='truck') && dxl>0.95 && dxl<LANEX+1.0 && P.y<o.top-0.4){   // near-miss: adjacent-lane train sweeps past you on the ground
         bumpCombo(); const b=2*comboMult(); coins$+=b; runNear++;
         popup(P.x,2.3,0,'NEAR MISS +'+b,'#4fd0ff'); burst(P.x+(laneOf(o.lane)>P.x?0.7:-0.7),1.5,0,7,0x4fd0ff,5,0.7); sLane();
+      } else if(o.type==='low' && dxl<0.9 && P.y>o.top-0.3){   // cleanly jumped a barrier in your lane
+        bumpCombo(); const b=comboMult(); coins$+=b; runNear++; popup(P.x,P.y+0.5,0,'HOP! +'+b,'#8ef07e'); burst(P.x,P.y,0,5,0x8ef07e,4,0.6);
+      } else if(o.type==='over' && dxl<0.9 && P.roll>0){   // cleanly rolled under an overhead bar in your lane
+        bumpCombo(); const b=comboMult(); coins$+=b; runNear++; popup(P.x,1.1,0,'DUCK! +'+b,'#8ef07e'); burst(P.x,0.6,0,5,0x8ef07e,4,0.6);
       } } }
   for(const c of coins){ c.z-=dz; c.mesh.position.z-=dz; c.mesh.rotateOnWorldAxis(COIN_Y, dt*3.5); }   // face→edge flash around vertical axis
   for(const pu of powerups){ pu.z-=dz; pu.grp.position.z-=dz; pu.orb.rotation.y+=dt*3; pu.grp.position.y=1.7+Math.sin(tRun*4+pu.z)*0.18; }
