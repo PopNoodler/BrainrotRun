@@ -42,3 +42,12 @@ Single-file HTML5 canvas PWA at `C:\Users\adamt\BrainrotRun`. Built with the
 - **v18** Render polish (ACES tone mapping + rim light) + distance milestones (+50 coins/500m).
 
 All verified structurally (node --check module + el-id/feature checks) and deployed to https://popnoodler.github.io/BrainrotRun/
+
+## Live-feedback session (2026-07-06) — v71→v76
+- **v71** User fixes: un-inverted L/R controls (mirrored screen-x), Subway-Surfers camera (higher/closer/steeper), Sahur rebuilt toward the Fortnite skin (bat-tapered body, big shouting face, cloth wrap, chunky bat).
+- **v72** (superseded) billboards + tung drum in music + sky bomber.
+- **v73** CHARACTER ZONES (user design): 7 zones, one per character — palette, entry banner, giant 3D character w/ catchphrase quips, themed floating props, per-zone music key, zone-locked bomber.
+- **v74** Distinct zone scenery (no generic cubes): log stumps / waves + giant Nikes / hangars + watchtowers / cacti + rocks / tire stacks / giant coffee cups / palms + giant bananas. Per-character giant idle anims + zone-entry confetti.
+- **v75** Geometry audit fixes (palm fronds fanned inward; banana tips floating) — verified against real three.js Euler math.
+- **v76** Milestones are now TUNG TUNG TUNG drum moments; zone-aware game-over quips.
+- Infra: Pages moved to workflow deploys w/ cancel-in-progress after transient "Deployment failed" emails; strict one-deploy-batch discipline.

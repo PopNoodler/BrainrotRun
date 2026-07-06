@@ -155,12 +155,12 @@
   <button class="btn2" id="quitBtn">🏠 QUIT TO MENU</button>
 </div>
 
-<div id="verTag">BRAINROT RUSH 3D v75</div>
+<div id="verTag">BRAINROT RUSH 3D v76</div>
 <div id="err" style="position:fixed;left:8px;right:8px;bottom:24px;z-index:30;display:none;background:rgba(120,10,20,.92);color:#fff;font:600 12px monospace;padding:8px 12px;border-radius:8px;white-space:pre-wrap"></div>
 
 <script type="module">
 import * as THREE from 'three';
-const GAME_VERSION='v75';
+const GAME_VERSION='v76';
 const el=id=>document.getElementById(id);
 const setLS=(k,v)=>{ try{ localStorage.setItem(k,v); }catch(e){} };   // safe write (Safari private mode throws on setItem)
 const reduceMotion=(()=>{ try{ return matchMedia('(prefers-reduced-motion: reduce)').matches; }catch(e){ return false; } })();   // a11y: damp shake + FOV kick
@@ -736,6 +736,7 @@ const sCoin=()=>tone(880,0.07,'square',0.09,1320), sJump=()=>tone(420,0.13,'sine
 const sPow=()=>{tone(660,0.09,'square',0.12,1320);setTimeout(()=>tone(1040,0.12,'square',0.1,1560),75);};
 const sShield=()=>tone(300,0.28,'sine',0.17,900);
 const sQuip=()=>{tone(620,0.08,'square',0.1,930);setTimeout(()=>tone(930,0.1,'square',0.09,1240),70);};   // zone/catchphrase jingle
+const sTung=()=>{tone(85,0.14,'triangle',0.22,55);setTimeout(()=>tone(85,0.14,'triangle',0.22,55),150);setTimeout(()=>tone(85,0.16,'triangle',0.24,50),300);};   // the signature three drum hits
 // ---- procedural background music (bass quarters + pentatonic arp, 4-bar loop) ----
 const MSCALE=[0,3,5,7,10], MBASS=[0,-5,3,-2], MROOT=196;   // G minor pentatonic; bar roots G/D/Bb/F
 let musIntv=null, musStep=0;
@@ -839,7 +840,8 @@ function finishGameOver(){ state=OVER;
   let mGain=0; if(!missionsTicked){ mGain=tickMissions({dist:Math.floor(dist), coins:coins$, surf:runSurf, near:runNear, runs:1, maxMult:runMaxMult}); missionsTicked=true; renderMissions(); }  // tick once per run
   el('goTitle').textContent = isBest ? '🏆 NEW BEST!' : 'TUNG DOWN!'; el('goTitle').style.color = isBest ? '#ffe14d' : '#ff5b6b';
   el('goDist').textContent=Math.floor(dist)+' m'; el('goCoins').textContent=coins$; el('goBest').textContent=best+' m';
-  el('goQuip').textContent = mGain?('🎯 Mission complete! +🪙'+mGain) : isBest?('🏆 New record — '+best+'m!') : QUIPS[(Math.random()*QUIPS.length)|0];
+  el('goQuip').textContent = mGain?('🎯 Mission complete! +🪙'+mGain) : isBest?('🏆 New record — '+best+'m!')
+    : (Math.random()<0.5 && biomeIdx>=0 ? "tung'd in the "+BIOMES[biomeIdx].emoji+' '+BIOMES[biomeIdx].name+' zone!' : QUIPS[(Math.random()*QUIPS.length)|0]);   // zone-aware death quip
   const canRevive = continues<1 && totalCoins>=REVIVE_COST;
   el('continueBtn').style.display = canRevive?'block':'none'; el('continueBtn').textContent='CONTINUE 🪙'+REVIVE_COST;
   el('hud').classList.add('hidden'); el('pauseBtn').style.display='none'; el('gameover').classList.remove('hidden'); el('mBest').textContent=best; el('mCoins').textContent=fmtC(totalCoins); }
@@ -854,7 +856,7 @@ function doContinue(){ if(continues>=1 || totalCoins<REVIVE_COST) return; totalC
 // ============ update ============
 function update(dt){
   tRun+=dt; speed=Math.min(SPEEDMAX, SPEED0+dist*0.03); dist+=speed*dt;   // peak speed at ~1400m, matching the difficulty curve
-  while(dist>=lastMile+500){ lastMile+=500; coins$+=50; popup(P.x,3.9,0,lastMile+'m! 🎉','#ffe14d'); burst(P.x,2.2,0,12,0xffe14d,7,0.9); sPow(); }  // distance milestone reward
+  while(dist>=lastMile+500){ lastMile+=500; coins$+=50; popup(P.x,3.9,0,lastMile+'m 🥁 TUNG TUNG TUNG!','#ffe14d'); burst(P.x,2.2,0,12,0xffe14d,7,0.9); sTung(); }  // milestone = the signature drum moment
   // lane lerp
   const tx2=laneOf(P.lane); P.x+=(tx2-P.x)*Math.min(1,dt*13);
   // roll timer
