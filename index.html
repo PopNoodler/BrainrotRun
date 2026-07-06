@@ -153,15 +153,16 @@
   <button class="btn2" id="quitBtn">🏠 QUIT TO MENU</button>
 </div>
 
-<div id="verTag">BRAINROT RUSH 3D v63</div>
+<div id="verTag">BRAINROT RUSH 3D v64</div>
 <div id="err" style="position:fixed;left:8px;right:8px;bottom:24px;z-index:30;display:none;background:rgba(120,10,20,.92);color:#fff;font:600 12px monospace;padding:8px 12px;border-radius:8px;white-space:pre-wrap"></div>
 
 <script type="module">
 import * as THREE from 'three';
-const GAME_VERSION='v63';
+const GAME_VERSION='v64';
 const el=id=>document.getElementById(id);
 const setLS=(k,v)=>{ try{ localStorage.setItem(k,v); }catch(e){} };   // safe write (Safari private mode throws on setItem)
 const reduceMotion=(()=>{ try{ return matchMedia('(prefers-reduced-motion: reduce)').matches; }catch(e){ return false; } })();   // a11y: damp shake + FOV kick
+const fmtC=n=>n>=10000?(n/1000).toFixed(1).replace(/\.0$/,'')+'k':''+n;   // compact large coin totals (12500 -> 12.5k)
 
 // ============ renderer / scene / camera ============
 const renderer=new THREE.WebGLRenderer({antialias:true,powerPreference:'high-performance'});
@@ -401,7 +402,7 @@ function refreshCharUI(){ const c=CHARACTERS[curChar]; el('charName').textConten
 function cycleChar(d){ curChar=(curChar+d+CHARACTERS.length)%CHARACTERS.length; loadCharacter(CHARACTERS[curChar]); refreshCharUI(); }
 function onPlay(){ const c=CHARACTERS[curChar];
   if(isOwned(c)){ setLS('br_char',c.id); startGame(); }
-  else if(totalCoins>=c.cost){ totalCoins-=c.cost; setLS('br_coins',totalCoins); owned.push(c.id); setLS('br_owned',JSON.stringify(owned)); setLS('br_char',c.id); el('mCoins').textContent=totalCoins; refreshCharUI(); }
+  else if(totalCoins>=c.cost){ totalCoins-=c.cost; setLS('br_coins',totalCoins); owned.push(c.id); setLS('br_owned',JSON.stringify(owned)); setLS('br_char',c.id); el('mCoins').textContent=fmtC(totalCoins); refreshCharUI(); }
 }
 // ---- daily-login bonus (streak) ----
 const dayKey=d=>d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate();
@@ -413,7 +414,7 @@ function claimDaily(){ const today=dayKey(new Date()); if(today===dailyDate) ret
   const reward = Math.min(300, 50+dailyStreak*25);   // day1 75 … caps at 300
   totalCoins+=reward; dailyDate=today;
   setLS('br_coins',totalCoins); setLS('br_daily',dailyDate); setLS('br_streak',dailyStreak);
-  el('mCoins').textContent=totalCoins; const b=el('dailyBtn'); b.disabled=true; b.textContent='✓ +🪙'+reward+' · '+dailyStreak+'-day streak';
+  el('mCoins').textContent=fmtC(totalCoins); const b=el('dailyBtn'); b.disabled=true; b.textContent='✓ +🪙'+reward+' · '+dailyStreak+'-day streak';
   setTimeout(()=>{ b.style.display='none'; b.disabled=false; b.textContent='🎁 DAILY BONUS'; }, 1600); }
 loadCharacter(CHARACTERS[curChar]);
 // fake soft shadow
@@ -595,7 +596,7 @@ let UPG; try{ UPG=JSON.parse(localStorage.getItem('br_upg'))||{}; }catch(e){ UPG
 for(const u of UPGRADES) if(typeof UPG[u.id]!=='number') UPG[u.id]=0;
 function saveUpg(){ setLS('br_upg',JSON.stringify(UPG)); }
 function upgCost(u){ return u.base*(UPG[u.id]+1); }   // escalating: base × (nextLevel)
-function renderShop(){ const box=el('shopList'); if(!box)return; el('shopCoins').textContent='🪙 '+totalCoins;
+function renderShop(){ const box=el('shopList'); if(!box)return; el('shopCoins').textContent='🪙 '+fmtC(totalCoins);
   box.innerHTML=UPGRADES.map(u=>{ const lvl=UPG[u.id], maxed=lvl>=u.max, cost=upgCost(u), dots='●'.repeat(lvl)+'○'.repeat(u.max-lvl);
     const btn=maxed?'<button class="upgBuy upgMax" disabled>MAX</button>'
       :'<button class="upgBuy" data-u="'+u.id+'"'+(totalCoins<cost?' disabled':'')+'>🪙'+cost+'</button>';
@@ -605,7 +606,7 @@ function renderShop(){ const box=el('shopList'); if(!box)return; el('shopCoins')
 }
 function buyUpg(id){ const u=UPGRADES.find(x=>x.id===id); if(!u||UPG[id]>=u.max)return; const cost=upgCost(u);
   if(totalCoins<cost)return; totalCoins-=cost; setLS('br_coins',totalCoins); UPG[id]++; saveUpg();
-  sPow(); el('mCoins').textContent=totalCoins; renderShop(); }
+  sPow(); el('mCoins').textContent=fmtC(totalCoins); renderShop(); }
 
 // ============ audio ============
 let AC=null; const ac=()=>{ if(!AC){try{AC=new (AudioContext||webkitAudioContext)()}catch(e){}} return AC; };
@@ -688,7 +689,7 @@ function quitToMenu(){ // abandon run: bank coins collected so far, record best,
   stopMusic(); paused=false; state=MENU; el('combovig').style.opacity=0; el('combobar').style.opacity=0;
   if(player){ player.rotation.set(0, player.userData.baseRotY||0, 0); player.scale.set(1,1,1); }
   el('pauseMenu').classList.add('hidden'); el('hud').classList.add('hidden'); el('pauseBtn').style.display='none'; el('pauseBtn').textContent='⏸';
-  el('menu').classList.remove('hidden'); el('mBest').textContent=best; el('mCoins').textContent=totalCoins; refreshCharUI(); refreshDailyUI(); }
+  el('menu').classList.remove('hidden'); el('mBest').textContent=best; el('mCoins').textContent=fmtC(totalCoins); refreshCharUI(); refreshDailyUI(); }
 
 // ============ start / over ============
 function reset(){ clearWorld(); speed=SPEED0; dist=0; coins$=0; tRun=0; shake=0; lastMile=0; lastOpen=1; nextZ=40;
@@ -723,7 +724,7 @@ function finishGameOver(){ state=OVER;
   el('goQuip').textContent = mGain?('🎯 Mission complete! +🪙'+mGain) : isBest?('🏆 New record — '+best+'m!') : QUIPS[(Math.random()*QUIPS.length)|0];
   const canRevive = continues<1 && totalCoins>=REVIVE_COST;
   el('continueBtn').style.display = canRevive?'block':'none'; el('continueBtn').textContent='CONTINUE 🪙'+REVIVE_COST;
-  el('hud').classList.add('hidden'); el('pauseBtn').style.display='none'; el('gameover').classList.remove('hidden'); el('mBest').textContent=best; el('mCoins').textContent=totalCoins; }
+  el('hud').classList.add('hidden'); el('pauseBtn').style.display='none'; el('gameover').classList.remove('hidden'); el('mBest').textContent=best; el('mCoins').textContent=fmtC(totalCoins); }
 function doContinue(){ if(continues>=1 || totalCoins<REVIVE_COST) return; totalCoins-=REVIVE_COST; setLS('br_coins',totalCoins); continues++;
   for(const o of obstacles) poolOb(o.mesh); obstacles=[];   // clear the field so you don't instantly re-crash
   P.y=0; P.vy=0; P.lane=1; P.x=0; P.roll=0; P.grounded=true; sq=0; pitch=0; deathT=0; shake=0; pInv=2.6; pShield=false; nextZ=Math.max(nextZ,18);
@@ -856,7 +857,7 @@ function animate(now){ let dt=(now-last)/1000; last=now; if(dt>0.05)dt=0.05;
   } catch(err){ showErr(err); }                 // never let one bad frame freeze the whole game
   requestAnimationFrame(animate); }
 
-el('mBest').textContent=best; el('mCoins').textContent=totalCoins; el('verTag').textContent='BRAINROT RUSH 3D '+GAME_VERSION; renderMissions(); refreshDailyUI();
+el('mBest').textContent=best; el('mCoins').textContent=fmtC(totalCoins); el('verTag').textContent='BRAINROT RUSH 3D '+GAME_VERSION; renderMissions(); refreshDailyUI();
 // (menu is revealed by revealMenu() once the model loads or falls back)
 requestAnimationFrame(animate);
 
