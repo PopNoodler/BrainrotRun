@@ -155,12 +155,12 @@
   <button class="btn2" id="quitBtn">🏠 QUIT TO MENU</button>
 </div>
 
-<div id="verTag">BRAINROT RUSH 3D v76</div>
+<div id="verTag">BRAINROT RUSH 3D v77</div>
 <div id="err" style="position:fixed;left:8px;right:8px;bottom:24px;z-index:30;display:none;background:rgba(120,10,20,.92);color:#fff;font:600 12px monospace;padding:8px 12px;border-radius:8px;white-space:pre-wrap"></div>
 
 <script type="module">
 import * as THREE from 'three';
-const GAME_VERSION='v76';
+const GAME_VERSION='v77';
 const el=id=>document.getElementById(id);
 const setLS=(k,v)=>{ try{ localStorage.setItem(k,v); }catch(e){} };   // safe write (Safari private mode throws on setItem)
 const reduceMotion=(()=>{ try{ return matchMedia('(prefers-reduced-motion: reduce)').matches; }catch(e){ return false; } })();   // a11y: damp shake + FOV kick
@@ -659,7 +659,7 @@ let continues=0, bankedThisRun=0, missionsTicked=false; const REVIVE_COST=150;  
 let speed=SPEED0, dist=0, coins$=0, tRun=0, shake=0, lastMile=0, coinPulse=0;
 const FOV0=62, FOVMAX=72;   // camera FOV widens with speed for a stronger sense of motion
 let pMag=0, pX2=0, pShield=false, pInv=0, pHover=0;   // magnet timer, 2x timer, shield flag, post-shield invuln, hoverboard timer
-let combo=0, comboT=0, roofT=0;             // coin-combo streak, its decay timer, roof-surf accumulator
+let combo=0, comboT=0, roofT=0, trailT=0;   // coin-combo streak, its decay timer, roof-surf accumulator, fire-trail emitter timer
 let runSurf=0, runNear=0, runMaxMult=1;     // per-run mission stats (surfs, near-misses, best combo mult)
 const comboMult=()=>Math.min(5, 1+((combo/5)|0));   // x1 → x5 as the streak grows (every 5 chain steps)
 function bumpCombo(){ combo++; comboT=2.6; }
@@ -879,6 +879,10 @@ function update(dt){
   if(comboMult()>runMaxMult) runMaxMult=comboMult();
   // combo streak decays if you stop chaining
   if(comboT>0){ comboT-=dt; if(comboT<=0)combo=0; }
+  // combo fire-trail: shed sparks behind the runner, hotter as the multiplier climbs
+  if(comboMult()>1){ trailT-=dt; if(trailT<=0){ trailT=0.09;
+    const cols=[0xffe14d,0xff9d3d,0xff5b3d,0xe0326e,0x8a5cff];
+    burst(P.x,P.y+0.5,-0.4,1,cols[Math.min(4,comboMult()-1)],1.6,0.35); } }
   // move obstacles/coins toward player
   const dz=speed*dt;
   for(const o of obstacles){ if(o.dead)continue; const pz=o.z; o.z-=dz; o.z2-=dz; o.mesh.position.z-=dz;
