@@ -153,12 +153,12 @@
   <button class="btn2" id="quitBtn">🏠 QUIT TO MENU</button>
 </div>
 
-<div id="verTag">BRAINROT RUSH 3D v58</div>
+<div id="verTag">BRAINROT RUSH 3D v59</div>
 <div id="err" style="position:fixed;left:8px;right:8px;bottom:24px;z-index:30;display:none;background:rgba(120,10,20,.92);color:#fff;font:600 12px monospace;padding:8px 12px;border-radius:8px;white-space:pre-wrap"></div>
 
 <script type="module">
 import * as THREE from 'three';
-const GAME_VERSION='v58';
+const GAME_VERSION='v59';
 const el=id=>document.getElementById(id);
 const setLS=(k,v)=>{ try{ localStorage.setItem(k,v); }catch(e){} };   // safe write (Safari private mode throws on setItem)
 const reduceMotion=(()=>{ try{ return matchMedia('(prefers-reduced-motion: reduce)').matches; }catch(e){ return false; } })();   // a11y: damp shake + FOV kick
@@ -331,13 +331,17 @@ function buildBombardiro(){ const g=new THREE.Group();
   for(const s of [-1,1]){ g.add(part(new THREE.BoxGeometry(1.6,0.14,0.62), CM.metal, s*0.98,1.75,-0.05));
     g.add(part(new THREE.SphereGeometry(0.16,10,8), CM.boot, s*0.9,1.5,-0.05)); }
   g.add(part(new THREE.BoxGeometry(0.1,0.72,0.5), CM.metal, 0,2.32,-0.55));
-  const head=part(new THREE.SphereGeometry(0.5,20,14), CM.croc, 0,2.72,0.08); head.scale.set(0.85,0.9,0.95); g.add(head);
-  g.add(part(new THREE.BoxGeometry(0.72,0.32,1.0), CM.croc, 0,2.64,0.82));
-  g.add(part(new THREE.BoxGeometry(0.64,0.2,0.9), CM.croc, 0,2.42,0.8));
-  for(let i=0;i<7;i++){ const tx=-0.28+i*0.093; g.add(part(new THREE.ConeGeometry(0.04,0.12,6), CM.tooth, tx,2.5,0.55)); }
-  for(const s of [-1,1]){ g.add(part(new THREE.SphereGeometry(0.16,14,10), CM.croc, s*0.28,3.02,0.08)); }
-  eyePair(g, null, 0.28, 3.06, 0.16, 0.11);
-  for(const s of [-1,1]){ const gg=part(new THREE.BoxGeometry(0.26,0.14,0.1), CM.goggle||CM.crocD, s*0.28,2.96,0.24); g.add(gg); }
+  // crocodile head with a prominent long toothy snout (the signature) + bulging eyes
+  const head=part(new THREE.SphereGeometry(0.5,20,14), CM.croc, 0,2.55,0.12); head.scale.set(0.95,0.85,0.95); g.add(head);
+  g.add(part(new THREE.BoxGeometry(0.56,0.3,1.2), CM.croc, 0,2.5,0.85));      // upper snout (long)
+  g.add(part(new THREE.BoxGeometry(0.5,0.16,1.05), CM.croc, 0,2.28,0.82));    // lower jaw
+  g.add(part(new THREE.BoxGeometry(0.44,0.06,0.95), CM.mouthD||CM.crocD, 0,2.4,0.82));   // dark mouth line
+  for(let i=0;i<6;i++){ const z=0.45+i*0.16;
+    for(const sx of [-0.18,0.18]){ const t=part(new THREE.ConeGeometry(0.045,0.14,6), CM.tooth, sx,2.42,z); t.rotation.x=Math.PI; g.add(t);
+      g.add(part(new THREE.ConeGeometry(0.045,0.12,6), CM.tooth, sx,2.3,z)); } }
+  for(const s of [-1,1]){ g.add(part(new THREE.SphereGeometry(0.15,12,8), CM.croc, s*0.24,2.95,0.06)); }
+  eyePair(g, null, 0.24, 3.0, 0.12, 0.11);
+  g.add(part(new THREE.BoxGeometry(0.6,0.1,0.2), CM.crocD, 0,2.86,0.2));      // aviator goggle strap
   g.userData={legs:legPair(g, CM.croc, CM.boot, 0.3, 0.78, 0.16)}; return g;
 }
 // -- Lirilì Larilà: cactus-elephant in sandals --

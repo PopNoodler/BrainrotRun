@@ -23,6 +23,8 @@ WHITE=mat('white',(0.95,0.95,0.94)); BLACK=mat('black',(0.06,0.05,0.04))
 MOUTH=mat('mouth',(0.29,0.06,0.06)); BROW=mat('brow',(0.23,0.14,0.07))
 BLUE=mat('blue',(0.25,0.5,0.75)); BELLY=mat('belly',(0.88,0.9,0.92))
 TOOTH=mat('tooth',(0.96,0.96,0.94)); SNEAK=mat('sneak',(0.18,0.43,0.94)); SOLE=mat('sole',(0.95,0.95,0.95))
+CROC=mat('croc',(0.3,0.48,0.23)); CROCD=mat('crocD',(0.2,0.35,0.16)); CROCB=mat('crocB',(0.85,0.82,0.66))
+METAL=mat('metal',(0.54,0.57,0.6)); BOOT=mat('boot',(0.1,0.1,0.12))
 
 def T(x,y,z): return (x, -z, y)          # three.js (Y-up, faces +Z) -> Blender (Z-up, faces -Y)
 def setm(o,m): o.data.materials.clear(); o.data.materials.append(m)
@@ -81,7 +83,32 @@ def build_tralalero():
     for s in (-1,1):
         cyl(0.16,1.0,(s*0.32,0.6,-0.1),BLUE); box(0.34,0.22,0.62,(s*0.32,0.14,0.08),SNEAK); box(0.38,0.1,0.68,(s*0.32,0.04,0.1),SOLE)
 
-{'sahur':build_sahur,'tralalero':build_tralalero}.get(NAME, build_sahur)()
+def build_bombardiro():
+    # chunky military-green croc torso
+    cyl(0.52,1.2,(0,1.7,0),CROC); sph(0.52,(0,1.15,0),m=CROC); sph(0.5,(0,2.3,0.05),(1,0.95,1),CROC)
+    sph(0.4,(0,1.55,0.42),(0.7,1.1,0.4),CROCB)
+    for i in range(4): cone(0.12,0.22,(0,1.1+i*0.42,-0.5),CROCD,sc=(0.5,1,1))
+    # bomber wings + engines + tail fin
+    for s in (-1,1):
+        box(1.7,0.13,0.55,(s*1.0,1.7,-0.1),METAL); sph(0.15,(s*0.95,1.48,-0.1),m=BOOT)
+    box(0.12,0.7,0.55,(0,2.35,-0.6),METAL)
+    # big crocodile head + LONG toothy snout jutting forward (the signature)
+    sph(0.5,(0,2.55,0.15),(0.95,0.85,0.95),CROC)
+    box(0.56,0.3,1.7,(0,2.5,1.0),CROC)                  # upper snout (long)
+    box(0.5,0.16,1.5,(0,2.28,0.95),CROC)                # lower jaw
+    box(0.44,0.06,1.35,(0,2.4,0.95),CROCD)              # dark mouth line
+    for i in range(8):
+        z=0.4+i*0.17
+        cone(0.045,0.14,(0.18,2.42,z),TOOTH,rot=(math.radians(180),0,0)); cone(0.045,0.14,(-0.18,2.42,z),TOOTH,rot=(math.radians(180),0,0))
+        cone(0.045,0.12,(0.18,2.3,z),TOOTH); cone(0.045,0.12,(-0.18,2.3,z),TOOTH)
+    for s in (-1,1):
+        sph(0.15,(s*0.24,2.95,0.08),m=CROC); sph(0.11,(s*0.24,3.0,0.12),m=WHITE); sph(0.055,(s*0.24,3.02,0.2),m=BLACK)
+    box(0.6,0.1,0.2,(0,2.86,0.2),CROCD)                 # goggle strap
+    for s in (-1,1): sph(0.04,(s*0.12,2.56,1.78),m=CROCD)   # nostrils at snout tip
+    for s in (-1,1):
+        cyl(0.17,0.9,(s*0.3,0.5,0),CROC); box(0.3,0.2,0.6,(s*0.3,0.12,0.16),BOOT)
+
+{'sahur':build_sahur,'tralalero':build_tralalero,'bombardiro':build_bombardiro}.get(NAME, build_sahur)()
 
 # ---- camera (track-to target) + light + workbench render ----
 bpy.ops.object.empty_add(location=(0,0,1.4)); tgt=bpy.context.active_object
