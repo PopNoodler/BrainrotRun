@@ -153,12 +153,12 @@
   <button class="btn2" id="quitBtn">🏠 QUIT TO MENU</button>
 </div>
 
-<div id="verTag">BRAINROT RUSH 3D v65</div>
+<div id="verTag">BRAINROT RUSH 3D v66</div>
 <div id="err" style="position:fixed;left:8px;right:8px;bottom:24px;z-index:30;display:none;background:rgba(120,10,20,.92);color:#fff;font:600 12px monospace;padding:8px 12px;border-radius:8px;white-space:pre-wrap"></div>
 
 <script type="module">
 import * as THREE from 'three';
-const GAME_VERSION='v65';
+const GAME_VERSION='v66';
 const el=id=>document.getElementById(id);
 const setLS=(k,v)=>{ try{ localStorage.setItem(k,v); }catch(e){} };   // safe write (Safari private mode throws on setItem)
 const reduceMotion=(()=>{ try{ return matchMedia('(prefers-reduced-motion: reduce)').matches; }catch(e){ return false; } })();   // a11y: damp shake + FOV kick
@@ -299,7 +299,8 @@ const CM={ blue:pmat(0x3f7fbf,0.5), belly:pmat(0xe0e7ec,0.5), tooth:pmat(0xf5f5e
   sneaker:pmat(0x2f6df0,0.5), sole:pmat(0xf2f2f2,0.5),
   croc:pmat(0x4c7a3a,0.6), crocD:pmat(0x33582a,0.65), crocBelly:pmat(0xd8d2a8,0.55), metal:pmat(0x8a9099,0.35,0.85), boot:pmat(0x191921,0.5),
   cactus:pmat(0x4e9a44,0.65), cactusD:pmat(0x33702c,0.7), spine:pmat(0xe6e090,0.5), ele:pmat(0x5aa050,0.6), tusk:pmat(0xf2eede,0.35), skin:pmat(0xd19a70,0.65),
-  tire:pmat(0x141418,0.75), tread:pmat(0x08080a,0.8), hub:pmat(0x9195a0,0.35,0.8), frog:pmat(0x5aa03a,0.6), frogBelly:pmat(0xd0d488,0.55), shoe:pmat(0x24222c,0.5) };
+  tire:pmat(0x141418,0.75), tread:pmat(0x08080a,0.8), hub:pmat(0x9195a0,0.35,0.8), frog:pmat(0x5aa03a,0.6), frogBelly:pmat(0xd0d488,0.55), shoe:pmat(0x24222c,0.5),
+  cup:pmat(0x8c6345,0.6), coffee:pmat(0x4d2e1a,0.5), foam:pmat(0xf5ebd4,0.7), blade:pmat(0xbfc6cf,0.35,0.6), hilt:pmat(0x1f1a1a,0.5) };
 function legPair(g, legMat, footMat, hipX, hipY, footZ){ const legs=[];
   for(const s of [-1,1]){ const leg=new THREE.Group();
     leg.add(part(new THREE.CapsuleGeometry(0.17,0.55,4,10), legMat, 0,-0.32,0));
@@ -377,6 +378,25 @@ function buildBoneca(){ const g=new THREE.Group();
     leg.position.set(s*0.26,0.78,0); g.add(leg); legs.push(leg); }
   g.userData={legs}; return g;
 }
+// -- Cappuccino Assassino: a coffee cup with a face wielding two katanas --
+function buildCappuccino(){ const g=new THREE.Group();
+  const cup=part(new THREE.CylinderGeometry(0.58,0.58,1.35,18), CM.cup, 0,1.45,0); g.add(cup);
+  g.add(part(new THREE.CylinderGeometry(0.62,0.62,0.14,18), CM.cup, 0,2.2,0));       // rim
+  g.add(part(new THREE.CylinderGeometry(0.55,0.55,0.06,18), CM.coffee, 0,2.24,0));   // coffee surface
+  const foam=part(new THREE.SphereGeometry(0.52,16,12), CM.foam, 0,2.28,0); foam.scale.set(1,0.42,1); g.add(foam);
+  // mug handle (side)
+  g.add(part(new THREE.CylinderGeometry(0.07,0.07,0.5,10), CM.cup, 0.68,1.5,0));
+  g.add(part(new THREE.SphereGeometry(0.09,10,8), CM.cup, 0.68,1.75,0));
+  g.add(part(new THREE.SphereGeometry(0.09,10,8), CM.cup, 0.68,1.25,0));
+  // face
+  eyePair(g, null, 0.2, 1.66, 0.5, 0.13);
+  const mouth=part(new THREE.SphereGeometry(0.16,12,8), CM.mouthD, 0,1.38,0.5); mouth.scale.set(1.2,0.5,0.5); g.add(mouth);
+  // arms + raised katanas (blade + hilt)
+  for(const s of [-1,1]){ g.add(part(new THREE.CylinderGeometry(0.09,0.09,0.55,10), CM.cup, s*0.62,1.55,0.12));
+    g.add(part(new THREE.CylinderGeometry(0.05,0.05,1.5,10), CM.blade, s*1.02,2.3,0.12));
+    g.add(part(new THREE.CylinderGeometry(0.07,0.07,0.26,10), CM.hilt, s*0.82,1.5,0.12)); }
+  g.userData={legs:legPair(g, CM.skin, CM.shoe, 0.26, 0.72, 0.14)}; return g;
+}
 // ---- character roster (procedural builders — always distinct, never a broken load) ----
 const CHARACTERS=[
   {id:'sahur',      name:'Tung Tung Tung Sahur',   cost:0,    build:buildSahur},
@@ -384,6 +404,7 @@ const CHARACTERS=[
   {id:'bombardiro', name:'Bombardiro Crocodilo 🐊✈️', cost:3000, build:buildBombardiro},
   {id:'lirili',     name:'Lirilì Larilà 🌵🐘',      cost:5000, build:buildLirili},
   {id:'boneca',     name:'Boneca Ambalabu 🐸🛞',    cost:8000, build:buildBoneca},
+  {id:'cappuccino', name:'Cappuccino Assassino ☕🗡️', cost:12000, build:buildCappuccino},
 ];
 let owned; try{ owned=JSON.parse(localStorage.getItem('br_owned')||'["sahur"]')||['sahur']; }catch(e){ owned=['sahur']; }
 const isOwned=c=>c.id==='sahur'||owned.includes(c.id);

@@ -29,6 +29,8 @@ CACT=mat('cact',(0.3,0.6,0.27)); CACTD=mat('cactD',(0.2,0.44,0.17)); SPINE=mat('
 ELE=mat('ele',(0.35,0.63,0.31)); TUSK=mat('tusk',(0.95,0.93,0.87)); SKIN=mat('skin',(0.82,0.6,0.44))
 TIRE=mat('tire',(0.08,0.08,0.09)); TREAD=mat('tread',(0.03,0.03,0.04)); HUB=mat('hub',(0.57,0.58,0.63))
 FROG=mat('frog',(0.35,0.63,0.23)); FROGB=mat('frogB',(0.82,0.83,0.53)); SHOE=mat('shoe',(0.14,0.13,0.17))
+CUP=mat('cup',(0.55,0.39,0.27)); COFFEE=mat('coffee',(0.3,0.18,0.1)); FOAM=mat('foam',(0.96,0.92,0.83))
+BLADE=mat('blade',(0.75,0.78,0.82)); HILT=mat('hilt',(0.12,0.1,0.1))
 
 OFFX=0.0
 def T(x,y,z): return (x+OFFX, -z, y)     # three.js (Y-up, faces +Z) -> Blender (Z-up, faces -Y); OFFX spaces a lineup
@@ -153,7 +155,27 @@ def build_boneca():
     for s in (-1,1):
         cyl(0.15,0.7,(s*0.26,0.5,0),SKIN); box(0.28,0.18,0.55,(s*0.26,0.1,0.14),SHOE)
 
-BUILDS={'sahur':build_sahur,'tralalero':build_tralalero,'bombardiro':build_bombardiro,'lirili':build_lirili,'boneca':build_boneca}
+def build_cappuccino():
+    # cappuccino cup body + rim + coffee surface + foam dome
+    cyl(0.58,1.35,(0,1.45,0),CUP); cyl(0.62,0.14,(0,2.2,0),CUP)
+    cyl(0.55,0.06,(0,2.24,0),COFFEE); sph(0.52,(0,2.28,0),(1,0.42,1),FOAM)
+    # mug handle (side C) — two stubs + connector
+    cyl(0.07,0.5,(0.68,1.5,0),CUP,rot=(0,0,math.radians(0)))
+    sph(0.09,(0.68,1.75,0),m=CUP); sph(0.09,(0.68,1.25,0),m=CUP)
+    # face on cup front
+    for ex in (-0.2,0.2):
+        sph(0.13,(ex,1.65,0.5),m=WHITE); sph(0.065,(ex,1.67,0.58),m=BLACK)
+    sph(0.16,(0,1.38,0.5),(1.2,0.5,0.5),MOUTH)
+    # arms + katanas (blades up-out)
+    for s in (-1,1):
+        cyl(0.09,0.55,(s*0.62,1.55,0.12),CUP,rot=(0,0,math.radians(s*38)))
+        cyl(0.05,1.5,(s*1.02,2.3,0.12),BLADE,rot=(0,0,math.radians(s*22)))
+        cyl(0.07,0.26,(s*0.82,1.5,0.12),HILT,rot=(0,0,math.radians(s*22)))
+    # legs + shoes
+    for s in (-1,1):
+        cyl(0.14,0.7,(s*0.26,0.5,0),SKIN); box(0.28,0.18,0.5,(s*0.26,0.1,0.14),SHOE)
+
+BUILDS={'sahur':build_sahur,'tralalero':build_tralalero,'bombardiro':build_bombardiro,'lirili':build_lirili,'boneca':build_boneca,'cappuccino':build_cappuccino}
 if NAME=='lineup':
     for nm,ox in [('sahur',-6.4),('tralalero',-3.2),('bombardiro',0),('lirili',3.2),('boneca',6.4)]:
         OFFX=ox; BUILDS[nm]()
