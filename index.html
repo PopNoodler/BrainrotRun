@@ -153,12 +153,12 @@
   <button class="btn2" id="quitBtn">🏠 QUIT TO MENU</button>
 </div>
 
-<div id="verTag">BRAINROT RUSH 3D v68</div>
+<div id="verTag">BRAINROT RUSH 3D v69</div>
 <div id="err" style="position:fixed;left:8px;right:8px;bottom:24px;z-index:30;display:none;background:rgba(120,10,20,.92);color:#fff;font:600 12px monospace;padding:8px 12px;border-radius:8px;white-space:pre-wrap"></div>
 
 <script type="module">
 import * as THREE from 'three';
-const GAME_VERSION='v68';
+const GAME_VERSION='v69';
 const el=id=>document.getElementById(id);
 const setLS=(k,v)=>{ try{ localStorage.setItem(k,v); }catch(e){} };   // safe write (Safari private mode throws on setItem)
 const reduceMotion=(()=>{ try{ return matchMedia('(prefers-reduced-motion: reduce)').matches; }catch(e){ return false; } })();   // a11y: damp shake + FOV kick
@@ -560,6 +560,7 @@ function spawnRow(z){
     if(Math.random()<(0.30+diffOf()*0.28)){ // two lanes blocked → open lane reachable (density ramps with distance)
       const ch=[lastOpen-1,lastOpen,lastOpen+1].filter(l=>l>=0&&l<3); const open=ch[(Math.random()*ch.length)|0];
       for(let L=0;L<3;L++) if(L!==open){ const t=pickType(); const o=addObstacle(t,L,z); if(t==='train') trainCoins(o); }
+      if(Math.random()<0.4){ for(let i=0;i<4;i++) addCoin(open, z+2+i*2.2, 1.1); }   // reward threading the guaranteed-clear gap (fairness-safe: open lane is already clear)
       lastOpen=open;
     } else {
       const blk=(Math.random()*3)|0; const t=pickType(); const o=addObstacle(t,blk,z); if(t==='train') trainCoins(o);
