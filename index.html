@@ -175,12 +175,12 @@
   <button class="btn2" id="quitBtn">🏠 QUIT TO MENU</button>
 </div>
 
-<div id="verTag">BRAINROT RUSH 3D v85</div>
+<div id="verTag">BRAINROT RUSH 3D v86</div>
 <div id="err" style="position:fixed;left:8px;right:8px;bottom:24px;z-index:30;display:none;background:rgba(120,10,20,.92);color:#fff;font:600 12px monospace;padding:8px 12px;border-radius:8px;white-space:pre-wrap"></div>
 
 <script type="module">
 import * as THREE from 'three';
-const GAME_VERSION='v85';
+const GAME_VERSION='v86';
 const el=id=>document.getElementById(id);
 const setLS=(k,v)=>{ try{ localStorage.setItem(k,v); }catch(e){} };   // safe write (Safari private mode throws on setItem)
 const reduceMotion=(()=>{ try{ return matchMedia('(prefers-reduced-motion: reduce)').matches; }catch(e){ return false; } })();   // a11y: damp shake + FOV kick
@@ -803,7 +803,9 @@ function addXP(n){ xpIn+=n; let ups=0; while(xpIn>=xpNeed(lvl)){ xpIn-=xpNeed(lv
 function refreshLvlUI(){ el('lvlNum').textContent='🧠 LVL '+lvl+' · +'+Math.min(50,lvl*2)+'% 🪙'; el('lvlFill').style.width=Math.min(100,xpIn/xpNeed(lvl)*100)+'%'; }
 function checkAch(){ const got=[]; for(const a of ACH){ if(!ach.includes(a.id)&&a.t()){ ach.push(a.id); totalCoins+=a.r; got.push(a); } }
   if(got.length){ setLS('br_coins',totalCoins); saveProg(); renderTrophies(); } return got; }
-function renderTrophies(){ el('trophyList').innerHTML=ACH.map(a=>{ const ok=ach.includes(a.id);
+function renderTrophies(){ const km=(stats.distTot/1000).toFixed(1);
+  el('trophyList').innerHTML='<div class="msn" style="text-align:center"><div class="msnTop" style="justify-content:center"><span>🏃 '+stats.runs+' runs · 📏 '+km+' km · 🚂 '+stats.surf+' surfs · 😎 '+stats.near+' near-misses</span></div></div>'
+  + ACH.map(a=>{ const ok=ach.includes(a.id);
   return '<div class="msn'+(ok?' msnDone':'')+'" style="opacity:'+(ok?'1':'.55')+'"><div class="msnTop"><span>'+(ok?'✅ ':'')+a.e+' <b>'+a.name+'</b> — '+a.desc+'</span><b>🪙'+a.r+'</b></div></div>'; }).join(''); }
 function renderCharGrid(){ const box=el('charGrid'); if(!box)return;
   box.innerHTML=CHARACTERS.map((c,i)=>{ const own=isOwned(c), sel=i===curChar;
@@ -987,7 +989,7 @@ function update(dt){
     popup(P.x,P.y+2.4,0,'SURF +'+b,'#ffd24d'); burst(P.x,P.y+0.15,0,4,0xffe14d,3,0.6); } } else roofT=0;
   if(comboMult()>runMaxMult) runMaxMult=comboMult();
   // combo streak decays if you stop chaining
-  if(comboT>0){ comboT-=dt; if(comboT<=0)combo=0; }
+  if(comboT>0){ comboT-=dt; if(comboT<=0){ if(combo>=10) popup(P.x,2.6,0,'combo lost 💔','#9a9ab8'); combo=0; } }   // teach the decay: visible break at ≥x3
   // combo fire-trail: shed sparks behind the runner, hotter as the multiplier climbs
   if(comboMult()>1){ trailT-=dt; if(trailT<=0){ trailT=0.09;
     const cols=[0xffe14d,0xff9d3d,0xff5b3d,0xe0326e,0x8a5cff];
