@@ -175,12 +175,12 @@
   <button class="btn2" id="quitBtn">🏠 QUIT TO MENU</button>
 </div>
 
-<div id="verTag">BRAINROT RUSH 3D v82</div>
+<div id="verTag">BRAINROT RUSH 3D v83</div>
 <div id="err" style="position:fixed;left:8px;right:8px;bottom:24px;z-index:30;display:none;background:rgba(120,10,20,.92);color:#fff;font:600 12px monospace;padding:8px 12px;border-radius:8px;white-space:pre-wrap"></div>
 
 <script type="module">
 import * as THREE from 'three';
-const GAME_VERSION='v82';
+const GAME_VERSION='v83';
 const el=id=>document.getElementById(id);
 const setLS=(k,v)=>{ try{ localStorage.setItem(k,v); }catch(e){} };   // safe write (Safari private mode throws on setItem)
 const reduceMotion=(()=>{ try{ return matchMedia('(prefers-reduced-motion: reduce)').matches; }catch(e){ return false; } })();   // a11y: damp shake + FOV kick
@@ -575,6 +575,19 @@ function setGate(b){ const g=gateCanvas.getContext('2d');
   g.fillStyle='#fff'; g.font='bold 32px Arial'; g.textAlign='center'; g.textBaseline='middle';
   g.fillText(b.emoji+' '+b.name+' '+b.emoji, 256, 34);
   gateTex.needsUpdate=true; gate.position.set(0,0,60); gate.visible=true; }
+// ---- best-run marker: a golden line at your record distance that you chase and smash through ----
+const bestMark=new THREE.Group(); let bestPassed=false;
+{ const line=new THREE.Mesh(new THREE.PlaneGeometry(LANEX*3+2,2.6), new THREE.MeshBasicMaterial({color:0xffe14d,transparent:true,opacity:0.26,side:THREE.DoubleSide}));
+  line.position.y=1.3; bestMark.add(line); }
+const bmCanvas=document.createElement('canvas'); bmCanvas.width=512; bmCanvas.height=96;
+const bmTex=new THREE.CanvasTexture(bmCanvas);
+const bmSprite=new THREE.Sprite(new THREE.SpriteMaterial({map:bmTex,transparent:true,depthWrite:false}));
+bmSprite.scale.set(6,1.12,1); bmSprite.position.y=3.5; bestMark.add(bmSprite);
+bestMark.visible=false; scene.add(bestMark);
+function setBestMark(){ const g=bmCanvas.getContext('2d'); g.clearRect(0,0,512,96);
+  g.fillStyle='rgba(10,10,20,0.55)'; g.fillRect(0,8,512,80);
+  g.fillStyle='#ffe14d'; g.font='bold 50px Arial'; g.textAlign='center'; g.textBaseline='middle';
+  g.fillText('🏆 BEST · '+best+'m',256,48); bmTex.needsUpdate=true; }
 setBiome(0,false);   // re-sync now that the zone actors exist (attaches Sahur's giant + scenery + props)
 // ---- particle juice (pooled) ----
 const pGeo=new THREE.BoxGeometry(0.2,0.2,0.2); const partPool=[], parts=[];
@@ -894,11 +907,11 @@ function reset(){ clearWorld(); speed=SPEED0; dist=0; coins$=0; tRun=0; shake=0;
   pMag=0; pX2=0; pShield=false; pInv=0; pHover=(UPG.headstart||0)*1.6; coyoteT=0; jumpBufT=0; combo=0; comboT=0; roofT=0;
   runSurf=0; runNear=0; runMaxMult=1; biomeIdx=-1; coinPulse=0; quipT=0;
   camera.fov=FOV0; camera.updateProjectionMatrix(); el('pups').textContent='';
-  P.lane=1; P.x=0; P.y=0; P.vy=0; P.roll=0; P.grounded=true; sq=0; pitch=0; camDip=0; gate.visible=false;
+  P.lane=1; P.x=0; P.y=0; P.vy=0; P.roll=0; P.grounded=true; sq=0; pitch=0; camDip=0; gate.visible=false; bestPassed=false; bestMark.visible=false;
   continues=0; bankedThisRun=0; missionsTicked=false; xpBanked=0; surfBanked=0; nearBanked=0; distBanked=0;
   // scenery/dashes reset positions handled continuously
 }
-function startGame(){ ac(); reset(); state=PLAY; paused=false;
+function startGame(){ ac(); reset(); setBestMark(); state=PLAY; paused=false;
   if(player){ player.rotation.set(0, player.userData.baseRotY||0, 0); player.position.set(0,0,0); }
   camera.position.set(0, camBase.y, camBase.z);
   el('menu').classList.add('hidden'); el('gameover').classList.add('hidden'); el('hud').classList.remove('hidden'); el('pauseBtn').style.display='block'; startMusic(); }
@@ -948,6 +961,10 @@ function doContinue(){ if(continues>=1 || totalCoins<REVIVE_COST) return; totalC
 function update(dt){
   tRun+=dt; speed=Math.min(SPEEDMAX, SPEED0+dist*0.03); dist+=speed*dt;   // peak speed at ~1400m, matching the difficulty curve
   while(dist>=lastMile+500){ lastMile+=500; coins$+=50; popup(P.x,3.9,0,lastMile+'m 🥁 TUNG TUNG TUNG!','#ffe14d'); burst(P.x,2.2,0,12,0xffe14d,7,0.9); sTung(); }  // milestone = the signature drum moment
+  // chase your own record: golden line at best distance, celebration when you smash through
+  if(best>=50 && !bestPassed){ const bz=best-dist;
+    if(bz<=Z_SPAWN){ bestMark.visible=true; bestMark.position.z=bz;
+      if(bz<=0){ bestPassed=true; bestMark.visible=false; popup(P.x,3.2,2,'🏆 BEST BEATEN — GO GO GO!','#ffe14d'); burst(P.x,2,0,20,0xffe14d,8,1.0); sPow(); vib(60); } } }
   // lane lerp
   const tx2=laneOf(P.lane); P.x+=(tx2-P.x)*Math.min(1,dt*16);   // snappier dodge (95% of lane change in ~185ms)
   // roll timer
