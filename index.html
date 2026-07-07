@@ -173,14 +173,15 @@
   <button class="btn" id="resumeBtn">▶ RESUME</button>
   <button class="btn2" id="restartBtn">🔄 RESTART</button>
   <button class="btn2" id="quitBtn">🏠 QUIT TO MENU</button>
+  <div id="pmMissions" style="width:min(90vw,360px);display:flex;flex-direction:column;gap:7px;margin-top:14px"></div>
 </div>
 
-<div id="verTag">BRAINROT RUSH 3D v92</div>
+<div id="verTag">BRAINROT RUSH 3D v93</div>
 <div id="err" style="position:fixed;left:8px;right:8px;bottom:24px;z-index:30;display:none;background:rgba(120,10,20,.92);color:#fff;font:600 12px monospace;padding:8px 12px;border-radius:8px;white-space:pre-wrap"></div>
 
 <script type="module">
 import * as THREE from 'three';
-const GAME_VERSION='v92';
+const GAME_VERSION='v93';
 const el=id=>document.getElementById(id);
 const setLS=(k,v)=>{ try{ localStorage.setItem(k,v); }catch(e){} };   // safe write (Safari private mode throws on setItem)
 const reduceMotion=(()=>{ try{ return matchMedia('(prefers-reduced-motion: reduce)').matches; }catch(e){ return false; } })();   // a11y: damp shake + FOV kick
@@ -720,7 +721,10 @@ function spawnRow(z){
     }
   } else { lastRowLen=0; // coin run along the safe lane
     const L=Math.random()<0.6?lastOpen:(Math.random()*3)|0, n=5+((Math.random()*4)|0);
-    if(Math.random()<0.34){ for(let i=0;i<n;i++) addCoin(L, z+i*2.2, 1.1+Math.sin(i/(n-1)*Math.PI)*3.0); }  // jump-arc trail: peaks at 4.1, collected mid-jump — teaches & rewards jumping
+    const v=Math.random();
+    if(v<0.28){ for(let i=0;i<n;i++) addCoin(L, z+i*2.2, 1.1+Math.sin(i/(n-1)*Math.PI)*3.0); }  // jump-arc trail: peaks at 4.1, collected mid-jump — teaches & rewards jumping
+    else if(v<0.5){ const L2=(L===0)?1:(L===2)?1:(Math.random()<0.5?0:2);   // zigzag weave (fairness-safe: coin rows spawn no obstacles)
+      for(let i=0;i<n;i++) addCoin(((i>>1)%2===0)?L:L2, z+i*2.3, 1.1); }
     else { const hi=Math.random()<0.25; for(let i=0;i<n;i++) addCoin(L, z+i*2.4, hi?3.1:1.1); }
     const rr=Math.random();
     if(rr<0.26){ const t=['magnet','shield','x2','hover'][(Math.random()*4)|0]; addPowerup(t, L, z+n*2.4+2.5); }  // power-up at the end of a coin run
@@ -921,7 +925,7 @@ el('tutGo').onclick=()=>{ setLS('br_tut','1'); el('tut').classList.add('hidden')
 el('muteBtn').textContent=['🔊','🔈','🔇'][soundMode];
 el('muteBtn').onclick=()=>{ soundMode=(soundMode+1)%3; setLS('br_sound',soundMode); applySound(); };
 function togglePause(){ if(state!==PLAY)return; paused=!paused; el('pauseBtn').textContent=paused?'▶':'⏸';
-  if(paused){ stopMusic(); el('pauseMenu').classList.remove('hidden'); } else { el('pauseMenu').classList.add('hidden'); startMusic(); } }
+  if(paused){ stopMusic(); el('pmMissions').innerHTML=el('missions').innerHTML; el('pauseMenu').classList.remove('hidden'); } else { el('pauseMenu').classList.add('hidden'); startMusic(); } }   // show current missions while paused
 function quitToMenu(){ // abandon run: bank coins collected so far, record best, return to menu
   const gain=Math.max(0, coins$-bankedThisRun); totalCoins+=gain; bankedThisRun=coins$; setLS('br_coins',totalCoins);
   stats.coinTot+=gain; saveProg();   // quit-banked coins still count toward lifetime stats
