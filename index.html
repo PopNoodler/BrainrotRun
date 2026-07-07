@@ -175,12 +175,12 @@
   <button class="btn2" id="quitBtn">🏠 QUIT TO MENU</button>
 </div>
 
-<div id="verTag">BRAINROT RUSH 3D v80</div>
+<div id="verTag">BRAINROT RUSH 3D v81</div>
 <div id="err" style="position:fixed;left:8px;right:8px;bottom:24px;z-index:30;display:none;background:rgba(120,10,20,.92);color:#fff;font:600 12px monospace;padding:8px 12px;border-radius:8px;white-space:pre-wrap"></div>
 
 <script type="module">
 import * as THREE from 'three';
-const GAME_VERSION='v80';
+const GAME_VERSION='v81';
 const el=id=>document.getElementById(id);
 const setLS=(k,v)=>{ try{ localStorage.setItem(k,v); }catch(e){} };   // safe write (Safari private mode throws on setItem)
 const reduceMotion=(()=>{ try{ return matchMedia('(prefers-reduced-motion: reduce)').matches; }catch(e){ return false; } })();   // a11y: damp shake + FOV kick
@@ -260,7 +260,7 @@ function setBiome(i,announce){ biomeIdx=i; const b=BIOMES[i]; _bg.setHex(b.bg); 
     if(curGiant){ curGiant.visible=true; curGiant.position.z=55+Math.random()*40; curGiant.position.x=(Math.random()<0.5?-1:1)*(11.5+Math.random()*2.5); } }
   if(floaties&&propMats){ for(const f of floaties) f.material=propMats[i][(Math.random()*propMats[i].length)|0]; }   // zone-themed floating props
   if(announce && state===PLAY){ const zb=el('zone'); zb.textContent=b.emoji+' '+b.name+' ZONE'; zb.style.color=b.accent;
-    zb.style.opacity='1'; zb.style.transform='scale(1.06)'; playMotif(b);
+    zb.style.opacity='1'; zb.style.transform='scale(1.06)'; playMotif(b); setGate(b);
     burst(0,4,8,18,parseInt(b.accent.slice(1),16),8,1.0);   // zone-entry confetti in the zone's color
     clearTimeout(zoneTO); zoneTO=setTimeout(()=>{ zb.style.opacity='0'; zb.style.transform='scale(0.9)'; },1900); } }
 setBiome(0,false);
@@ -558,6 +558,23 @@ zoneScenery=BIOMES.map((b,i)=>{ const arr=[];
     g.position.set(side*(12+Math.random()*6), 0, k*(SCN_SPAN/SCN_N)+Math.random()*6);
     g.rotation.y=Math.random()*6.28; g.visible=false; scene.add(g); arr.push(g); }
   return arr; });
+// ---- zone GATE: an archway you physically run through as you cross into each zone ----
+const gateBanner=new THREE.MeshBasicMaterial({color:0xffffff});
+const gate=new THREE.Group();
+{ const postM=new THREE.MeshLambertMaterial({color:0x2a2438});
+  const pL=new THREE.Mesh(new THREE.BoxGeometry(0.5,5.4,0.5), postM); pL.position.set(-4.6,2.7,0);
+  const pR=new THREE.Mesh(new THREE.BoxGeometry(0.5,5.4,0.5), postM); pR.position.set(4.6,2.7,0);
+  const bar=new THREE.Mesh(new THREE.BoxGeometry(9.8,1.15,0.42), gateBanner); bar.position.y=5.35;   // underside 4.78 > jump apex 4.29 — pure decoration, never a collider
+  gate.add(pL); gate.add(pR); gate.add(bar); }
+gate.visible=false; scene.add(gate);
+const gateCanvas=document.createElement('canvas'); gateCanvas.width=512; gateCanvas.height=64;
+const gateTex=new THREE.CanvasTexture(gateCanvas); gateBanner.map=gateTex;
+function setGate(b){ const g=gateCanvas.getContext('2d');
+  g.fillStyle=b.accent; g.fillRect(0,0,512,64);
+  g.fillStyle='rgba(0,0,0,0.55)'; g.fillRect(6,6,500,52);
+  g.fillStyle='#fff'; g.font='bold 32px Arial'; g.textAlign='center'; g.textBaseline='middle';
+  g.fillText(b.emoji+' '+b.name+' '+b.emoji, 256, 34);
+  gateTex.needsUpdate=true; gate.position.set(0,0,60); gate.visible=true; }
 setBiome(0,false);   // re-sync now that the zone actors exist (attaches Sahur's giant + scenery + props)
 // ---- particle juice (pooled) ----
 const pGeo=new THREE.BoxGeometry(0.2,0.2,0.2); const partPool=[], parts=[];
@@ -876,7 +893,7 @@ function reset(){ clearWorld(); speed=SPEED0; dist=0; coins$=0; tRun=0; shake=0;
   pMag=0; pX2=0; pShield=false; pInv=0; pHover=(UPG.headstart||0)*1.6; coyoteT=0; jumpBufT=0; combo=0; comboT=0; roofT=0;
   runSurf=0; runNear=0; runMaxMult=1; biomeIdx=-1; coinPulse=0; quipT=0;
   camera.fov=FOV0; camera.updateProjectionMatrix(); el('pups').textContent='';
-  P.lane=1; P.x=0; P.y=0; P.vy=0; P.roll=0; P.grounded=true; sq=0; pitch=0; camDip=0;
+  P.lane=1; P.x=0; P.y=0; P.vy=0; P.roll=0; P.grounded=true; sq=0; pitch=0; camDip=0; gate.visible=false;
   continues=0; bankedThisRun=0; missionsTicked=false; xpBanked=0; surfBanked=0; nearBanked=0; distBanked=0;
   // scenery/dashes reset positions handled continuously
 }
@@ -1008,7 +1025,8 @@ function update(dt){
   const bi=Math.floor(dist/600)%BIOMES.length; if(bi!==biomeIdx) setBiome(bi, true);   // announce every zone, incl. the first at run start
   scene.background.lerp(_bg, Math.min(1,dt*2)); scene.fog.color.lerp(_fog, Math.min(1,dt*2));
   // recycle scenery
-  for(const d of dashes){ d.position.z-=dz; if(d.position.z< -12) d.position.z+=234; }
+  for(const d of dashes){ d.position.z-=dz; d.scale.y=1+(speed-SPEED0)*0.03; if(d.position.z< -12) d.position.z+=234; }   // dashes stretch with speed
+  if(gate.visible){ gate.position.z-=dz; if(gate.position.z< -14) gate.visible=false; }   // ride through the zone gate
   for(const t of ties){ t.position.z-=dz; if(t.position.z< -12) t.position.z+=TIE_N*TIE_SP; }
   if(curScn) for(const g of curScn){ g.position.z-=dz; if(g.position.z< -16) g.position.z+=SCN_SPAN; }   // themed zone scenery scrolls by
   // zone giant: scrolls past, idles like itself, and shouts its catchphrase as it passes you
