@@ -179,12 +179,12 @@
   <div id="pmMissions" style="width:min(90vw,360px);display:flex;flex-direction:column;gap:7px;margin-top:14px"></div>
 </div>
 
-<div id="verTag">BRAINROT RUSH 3D v109</div>
+<div id="verTag">BRAINROT RUSH 3D v110</div>
 <div id="err" style="position:fixed;left:8px;right:8px;bottom:24px;z-index:30;display:none;background:rgba(120,10,20,.92);color:#fff;font:600 12px monospace;padding:8px 12px;border-radius:8px;white-space:pre-wrap"></div>
 
 <script type="module">
 import * as THREE from 'three';
-const GAME_VERSION='v109';
+const GAME_VERSION='v110';
 const el=id=>document.getElementById(id);
 const setLS=(k,v)=>{ try{ localStorage.setItem(k,v); }catch(e){} };   // safe write (Safari private mode throws on setItem)
 const reduceMotion=(()=>{ try{ return matchMedia('(prefers-reduced-motion: reduce)').matches; }catch(e){ return false; } })();   // a11y: damp shake + FOV kick
@@ -567,9 +567,15 @@ for(let i=0;i<8;i++){ const s=new THREE.Sprite(propMats[0][i%propMats[0].length]
 // ---- ZONE SCENERY: distinct themed roadside sets per character zone (no generic cubes) ----
 const SCN_N=12, SCN_SPAN=264;
 const mkScn=[
-  ()=>{ const g=new THREE.Group(); const h=2.5+Math.random()*3;   // Sahur: wooden log stumps
-    g.add(part(new THREE.CylinderGeometry(0.8,0.95,h,10), M.wood, 0,h/2,0));
-    g.add(part(new THREE.CylinderGeometry(0.82,0.82,0.16,10), M.woodD, 0,h+0.06,0)); return g; },
+  ()=>{ const g=new THREE.Group();   // Sahur: log stumps + his signature standing drums
+    if(Math.random()<0.4){ const h=1.6+Math.random()*0.8;
+      g.add(part(new THREE.CylinderGeometry(1.0,0.9,h,14), M.woodD, 0,h/2,0));
+      g.add(part(new THREE.CylinderGeometry(1.02,1.02,0.1,14), M.cloth, 0,h+0.02,0));   // drum skin
+      const h1=part(new THREE.TorusGeometry(1.0,0.06,6,16), M.bat, 0,h*0.75,0, Math.PI/2); g.add(h1);   // hoops
+      const h2=part(new THREE.TorusGeometry(0.98,0.06,6,16), M.bat, 0,h*0.25,0, Math.PI/2); g.add(h2); }
+    else { const h=2.5+Math.random()*3;
+      g.add(part(new THREE.CylinderGeometry(0.8,0.95,h,10), M.wood, 0,h/2,0));
+      g.add(part(new THREE.CylinderGeometry(0.82,0.82,0.16,10), M.woodD, 0,h+0.06,0)); } return g; },
   ()=>{ const g=new THREE.Group();   // Tralalero: ocean waves + the occasional giant Nike
     if(Math.random()<0.3){ g.add(part(new THREE.BoxGeometry(2.6,1.4,4.4), CM.sneaker, 0,1.0,0));
       g.add(part(new THREE.BoxGeometry(2.9,0.5,4.7), CM.sole, 0,0.25,0));
