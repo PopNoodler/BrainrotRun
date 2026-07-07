@@ -176,12 +176,12 @@
   <div id="pmMissions" style="width:min(90vw,360px);display:flex;flex-direction:column;gap:7px;margin-top:14px"></div>
 </div>
 
-<div id="verTag">BRAINROT RUSH 3D v93</div>
+<div id="verTag">BRAINROT RUSH 3D v94</div>
 <div id="err" style="position:fixed;left:8px;right:8px;bottom:24px;z-index:30;display:none;background:rgba(120,10,20,.92);color:#fff;font:600 12px monospace;padding:8px 12px;border-radius:8px;white-space:pre-wrap"></div>
 
 <script type="module">
 import * as THREE from 'three';
-const GAME_VERSION='v93';
+const GAME_VERSION='v94';
 const el=id=>document.getElementById(id);
 const setLS=(k,v)=>{ try{ localStorage.setItem(k,v); }catch(e){} };   // safe write (Safari private mode throws on setItem)
 const reduceMotion=(()=>{ try{ return matchMedia('(prefers-reduced-motion: reduce)').matches; }catch(e){ return false; } })();   // a11y: damp shake + FOV kick
@@ -740,7 +740,7 @@ const MENU=0,PLAY=1,OVER=2,DYING=3; let state=MENU, paused=false;
 let deathT=0, deathVy=0, deathSpin=0;   // crash tumble animation
 let continues=0, bankedThisRun=0, missionsTicked=false; const REVIVE_COST=150;   // one paid revive per run; delta-bank keeps coin accounting exact
 let xpBanked=0, surfBanked=0, nearBanked=0, distBanked=0;   // same delta-banking for XP/lifetime stats across revives
-let speed=SPEED0, dist=0, coins$=0, tRun=0, shake=0, lastMile=0, coinPulse=0;
+let speed=SPEED0, dist=0, coins$=0, tRun=0, shake=0, lastMile=0, coinPulse=0, nextStorm=0;
 const FOV0=62, FOVMAX=72;   // camera FOV widens with speed for a stronger sense of motion
 let pMag=0, pX2=0, pShield=false, pInv=0, pHover=0;   // magnet timer, 2x timer, shield flag, post-shield invuln, hoverboard timer
 let combo=0, comboT=0, roofT=0, trailT=0;   // coin-combo streak, its decay timer, roof-surf accumulator, fire-trail emitter timer
@@ -937,7 +937,7 @@ function quitToMenu(){ // abandon run: bank coins collected so far, record best,
   el('menu').classList.remove('hidden'); el('mBest').textContent=best; el('mCoins').textContent=fmtC(totalCoins); refreshCharUI(); refreshDailyUI(); }
 
 // ============ start / over ============
-function reset(){ clearWorld(); speed=SPEED0; dist=0; coins$=0; tRun=0; shake=0; lastMile=0; lastOpen=1; nextZ=40;
+function reset(){ clearWorld(); speed=SPEED0; dist=0; coins$=0; tRun=0; shake=0; lastMile=0; lastOpen=1; nextZ=40; nextStorm=600+Math.random()*500;
   pMag=0; pX2=0; pShield=false; pInv=0; pHover=(UPG.headstart||0)*1.6; coyoteT=0; jumpBufT=0; combo=0; comboT=0; roofT=0;
   runSurf=0; runNear=0; runMaxMult=1; biomeIdx=-1; coinPulse=0; quipT=0;
   camera.fov=FOV0; camera.updateProjectionMatrix(); el('pups').textContent='';
@@ -995,6 +995,10 @@ function doContinue(){ if(continues>=1 || totalCoins<REVIVE_COST) return; totalC
 function update(dt){
   tRun+=dt; speed=Math.min(SPEEDMAX, SPEED0+dist*0.03); dist+=speed*dt;   // peak speed at ~1400m, matching the difficulty curve
   while(dist>=lastMile+500){ lastMile+=500; coins$+=50; popup(P.x,3.9,0,lastMile+'m 🥁 TUNG TUNG TUNG!','#ffe14d'); burst(P.x,2.2,0,12,0xffe14d,7,0.9); sTung(); }  // milestone = the signature drum moment
+  // rare COIN STORM: a rain of high coins across all lanes (roof height — grabbed mid-jump/roof-run, never buried in trains)
+  if(dist>=nextStorm){ nextStorm=dist+700+Math.random()*600;
+    for(let r=0;r<6;r++) for(let L=0;L<3;L++) addCoin(L, Z_SPAWN+r*2.6+L*0.6, 3.4);
+    popup(P.x,3.6,3,'COIN STORM! 🌧️🪙','#ffe14d'); sPow(); }
   // chase your own record: golden line at best distance, celebration when you smash through
   if(best>=50 && !bestPassed){ const bz=best-dist;
     if(bz<=Z_SPAWN){ bestMark.visible=true; bestMark.position.z=bz;
