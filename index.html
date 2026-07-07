@@ -151,6 +151,7 @@
     <div class="tutrow"><span class="tutic">⬇️</span><span>Swipe down to <b>ROLL</b> under the blue bars</span></div>
     <div class="tutrow"><span class="tutic">🪙🔥</span><span>Chain coins &amp; near-misses for combo multipliers</span></div>
     <div class="tutrow"><span class="tutic">🛹</span><span>Grab power-ups: magnet, shield, hoverboard, ✖️2</span></div>
+    <div class="tutrow"><span class="tutic">🌍</span><span>Every 600m is a new character <b>ZONE</b> — meet the giants!</span></div>
   </div>
   <button class="btn" id="tutGo">LET'S GO 🧠</button>
 </div>
@@ -177,12 +178,12 @@
   <div id="pmMissions" style="width:min(90vw,360px);display:flex;flex-direction:column;gap:7px;margin-top:14px"></div>
 </div>
 
-<div id="verTag">BRAINROT RUSH 3D v107</div>
+<div id="verTag">BRAINROT RUSH 3D v108</div>
 <div id="err" style="position:fixed;left:8px;right:8px;bottom:24px;z-index:30;display:none;background:rgba(120,10,20,.92);color:#fff;font:600 12px monospace;padding:8px 12px;border-radius:8px;white-space:pre-wrap"></div>
 
 <script type="module">
 import * as THREE from 'three';
-const GAME_VERSION='v107';
+const GAME_VERSION='v108';
 const el=id=>document.getElementById(id);
 const setLS=(k,v)=>{ try{ localStorage.setItem(k,v); }catch(e){} };   // safe write (Safari private mode throws on setItem)
 const reduceMotion=(()=>{ try{ return matchMedia('(prefers-reduced-motion: reduce)').matches; }catch(e){ return false; } })();   // a11y: damp shake + FOV kick
@@ -960,6 +961,7 @@ function togglePause(){ if(state!==PLAY)return;
   else { resuming=true; el('pauseMenu').classList.add('hidden');   // 3-2-1 drum countdown so resume isn't a cold drop at speed
     let n=3; const zb=el('zone');
     const tick=()=>{ if(state!==PLAY || !resuming){ zb.style.opacity='0'; return; }
+      if(document.hidden){ resuming=false; zb.style.opacity='0'; el('pauseMenu').classList.remove('hidden'); return; }   // tab hidden mid-count → back to pause (prevents unpausing in a hidden tab)
       if(n>0){ zb.textContent='🥁 '+n; zb.style.color='#ffe14d'; zb.style.opacity='1'; zb.style.transform='scale(1.06)'; sLane(); n--; resumeTO=setTimeout(tick,600); }
       else { zb.style.opacity='0'; resuming=false; paused=false; el('pauseBtn').textContent='⏸'; startMusic(); } };
     tick(); } }
