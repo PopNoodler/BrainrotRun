@@ -175,12 +175,12 @@
   <button class="btn2" id="quitBtn">🏠 QUIT TO MENU</button>
 </div>
 
-<div id="verTag">BRAINROT RUSH 3D v81</div>
+<div id="verTag">BRAINROT RUSH 3D v82</div>
 <div id="err" style="position:fixed;left:8px;right:8px;bottom:24px;z-index:30;display:none;background:rgba(120,10,20,.92);color:#fff;font:600 12px monospace;padding:8px 12px;border-radius:8px;white-space:pre-wrap"></div>
 
 <script type="module">
 import * as THREE from 'three';
-const GAME_VERSION='v81';
+const GAME_VERSION='v82';
 const el=id=>document.getElementById(id);
 const setLS=(k,v)=>{ try{ localStorage.setItem(k,v); }catch(e){} };   // safe write (Safari private mode throws on setItem)
 const reduceMotion=(()=>{ try{ return matchMedia('(prefers-reduced-motion: reduce)').matches; }catch(e){ return false; } })();   // a11y: damp shake + FOV kick
@@ -786,7 +786,7 @@ const ACH=[
 function saveProg(){ setLS('br_lvl',lvl); setLS('br_xpin',xpIn); setLS('br_stats',JSON.stringify(stats)); setLS('br_ach',JSON.stringify(ach)); }
 function addXP(n){ xpIn+=n; let ups=0; while(xpIn>=xpNeed(lvl)){ xpIn-=xpNeed(lvl); lvl++; ups++; totalCoins+=25*lvl; }
   if(ups) setLS('br_coins',totalCoins); saveProg(); refreshLvlUI(); return ups; }
-function refreshLvlUI(){ el('lvlNum').textContent='🧠 LVL '+lvl; el('lvlFill').style.width=Math.min(100,xpIn/xpNeed(lvl)*100)+'%'; }
+function refreshLvlUI(){ el('lvlNum').textContent='🧠 LVL '+lvl+' · +'+Math.min(50,lvl*2)+'% 🪙'; el('lvlFill').style.width=Math.min(100,xpIn/xpNeed(lvl)*100)+'%'; }
 function checkAch(){ const got=[]; for(const a of ACH){ if(!ach.includes(a.id)&&a.t()){ ach.push(a.id); totalCoins+=a.r; got.push(a); } }
   if(got.length){ setLS('br_coins',totalCoins); saveProg(); renderTrophies(); } return got; }
 function renderTrophies(){ el('trophyList').innerHTML=ACH.map(a=>{ const ok=ach.includes(a.id);
@@ -834,7 +834,8 @@ function screenFlash(hex){ const f=el('flash'); if(!f)return; f.style.background
 const vib=p=>{ if(soundMode<2){ try{ navigator.vibrate && navigator.vibrate(p); }catch(e){} } };   // haptics (Android); off in silent mode
 function activatePU(t){ if(t==='magnet')pMag=8+UPG.magnet*2; else if(t==='x2')pX2=10; else if(t==='shield')pShield=true; else if(t==='hover')pHover=10+UPG.hover*2; sPow(); screenFlash(PU_COL[t]); vib(35); burst(P.x,1.6,0,14,PU_COL[t],7,1.0); }
 function collectCoin(c){ c.got=true; bumpCombo(); coinPulse=0.13;
-  const m=comboMult(), val=Math.round(m*(pX2>0?2:1)*(1+UPG.coinboost*0.1)*(c.val||1)); coins$+=val;
+  const lvlBoost=Math.min(1.5, 1+lvl*0.02);   // Brainrot Level pays: +2% coins per level, cap +50%
+  const m=comboMult(), val=Math.round(m*(pX2>0?2:1)*(1+UPG.coinboost*0.1)*lvlBoost*(c.val||1)); coins$+=val;
   if(c.gem){ sPow(); burst(c.mesh.position.x,c.mesh.position.y,c.z,10,0x6cf0ff,5,0.8); popup(c.mesh.position.x,c.mesh.position.y+0.7,c.z,'💎 +'+val,'#6cf0ff'); }
   else { const cp=880*(1+(m-1)*0.14); tone(cp,0.07,'square',0.09,cp*1.5);   // coin pitch rises with combo (x1=880Hz → x5≈1373Hz)
     burst(c.mesh.position.x,c.mesh.position.y,c.z,4,0xffe14d,3.2,0.6); if(val>1) popup(c.mesh.position.x, c.mesh.position.y+0.6, c.z, '+'+val, m>1?'#ff9d3d':'#ffe14d'); }
@@ -959,7 +960,7 @@ function update(dt){
     const dxl=Math.abs(P.x-laneOf(o.lane)); if(dxl>1.2)continue;
     if(o.z<=0.5 && o.z2>=-0.5){ if(P.y >= o.top-0.5) support=Math.max(support,o.top); }
   }
-  if(P.y<=support){ if(P.vy<-0.1&&!P.grounded){ sLand(); sq=-0.24; burst(P.x,P.y+0.1,0,6,playerTint,3.5,0.4); } P.y=support; P.vy=0; P.grounded=true; } else P.grounded=false;
+  if(P.y<=support){ if(P.vy<-0.1&&!P.grounded){ sLand(); sq=-0.24; burst(P.x,P.y+0.1,0,Math.min(12,3+Math.floor(-P.vy*0.25)),playerTint,3.5,0.4); } P.y=support; P.vy=0; P.grounded=true; } else P.grounded=false;   // dust scales with impact speed
   // coyote time + buffered jump for responsive controls
   if(P.grounded){ coyoteT=0.10; if(jumpBufT>0 && P.roll<=0) doJump(); } else if(coyoteT>0) coyoteT-=dt;
   if(jumpBufT>0) jumpBufT-=dt;
