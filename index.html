@@ -175,12 +175,12 @@
   <button class="btn2" id="quitBtn">🏠 QUIT TO MENU</button>
 </div>
 
-<div id="verTag">BRAINROT RUSH 3D v84</div>
+<div id="verTag">BRAINROT RUSH 3D v85</div>
 <div id="err" style="position:fixed;left:8px;right:8px;bottom:24px;z-index:30;display:none;background:rgba(120,10,20,.92);color:#fff;font:600 12px monospace;padding:8px 12px;border-radius:8px;white-space:pre-wrap"></div>
 
 <script type="module">
 import * as THREE from 'three';
-const GAME_VERSION='v84';
+const GAME_VERSION='v85';
 const el=id=>document.getElementById(id);
 const setLS=(k,v)=>{ try{ localStorage.setItem(k,v); }catch(e){} };   // safe write (Safari private mode throws on setItem)
 const reduceMotion=(()=>{ try{ return matchMedia('(prefers-reduced-motion: reduce)').matches; }catch(e){ return false; } })();   // a11y: damp shake + FOV kick
@@ -647,7 +647,7 @@ function poolOb(m){ scene.remove(m); m.visible=true; obPool.push(m); }
 function clearWorld(){ for(const o of obstacles) poolOb(o.mesh); for(const c of coins){ if(!c.got) poolCoin(c); } for(const pu of powerups) scene.remove(pu.grp); obstacles=[]; coins=[]; powerups=[]; }
 
 // ---- obstacle spawning (fairness-guaranteed) ----
-let lastOpen=1, nextZ=0;
+let lastOpen=1, nextZ=0, lastRowLen=0;   // lastRowLen: longest obstacle in the previous row (keeps consecutive rows disjoint)
 const diffOf=()=>Math.min(1, dist/1400);   // 0 at start → 1 by ~1400m
 function addObstacle(type,lane,z){
   let mesh, top, len, bot=0, d=diffOf();
@@ -683,14 +683,15 @@ function spawnRow(z){
   if(r<0.66){
     if(Math.random()<(0.30+diffOf()*0.28)){ // two lanes blocked → open lane reachable (density ramps with distance)
       const ch=[lastOpen-1,lastOpen,lastOpen+1].filter(l=>l>=0&&l<3); const open=ch[(Math.random()*ch.length)|0];
-      for(let L=0;L<3;L++) if(L!==open){ const t=pickType(); const o=addObstacle(t,L,z); if(t==='train') trainCoins(o); }
+      let mx=0; for(let L=0;L<3;L++) if(L!==open){ const t=pickType(); const o=addObstacle(t,L,z); if(o.len>mx)mx=o.len; if(t==='train') trainCoins(o); }
+      lastRowLen=mx;
       if(Math.random()<0.4){ for(let i=0;i<4;i++) addCoin(open, z+2+i*2.2, 1.1); }   // reward threading the guaranteed-clear gap (fairness-safe: open lane is already clear)
       lastOpen=open;
     } else {
-      const blk=(Math.random()*3)|0; const t=pickType(); const o=addObstacle(t,blk,z); if(t==='train') trainCoins(o);
+      const blk=(Math.random()*3)|0; const t=pickType(); const o=addObstacle(t,blk,z); lastRowLen=o.len; if(t==='train') trainCoins(o);
       lastOpen=(blk!==lastOpen)?lastOpen:[lastOpen-1,lastOpen+1].filter(l=>l>=0&&l<3)[0];
     }
-  } else { // coin run along the safe lane
+  } else { lastRowLen=0; // coin run along the safe lane
     const L=Math.random()<0.6?lastOpen:(Math.random()*3)|0, n=5+((Math.random()*4)|0);
     if(Math.random()<0.34){ for(let i=0;i<n;i++) addCoin(L, z+i*2.2, 1.1+Math.sin(i/(n-1)*Math.PI)*3.0); }  // jump-arc trail: peaks at 4.1, collected mid-jump — teaches & rewards jumping
     else { const hi=Math.random()<0.25; for(let i=0;i<n;i++) addCoin(L, z+i*2.4, hi?3.1:1.1); }
@@ -1038,7 +1039,7 @@ function update(dt){
   coins=coins.filter(c=>{ if(c.got)return false; if(c.z< -8){ poolCoin(c); return false;} return true; });
   powerups=powerups.filter(pu=>{ if(pu.got)return false; if(pu.z< -6){scene.remove(pu.grp);return false;} return true; });
   // spawn ahead
-  nextZ-=dz; if(nextZ<=0){ spawnRow(Z_SPAWN); nextZ=Math.max(speed*0.30, 22-dist*0.004); }   // time-based floor: ≥0.30s between rows so high speed stays reactable (was fixed 11 = 0.17s @ max speed)
+  nextZ-=dz; if(nextZ<=0){ spawnRow(Z_SPAWN); nextZ=Math.max(speed*0.30, 22-dist*0.004, lastRowLen+3); }   // ≥0.30s reaction AND rows stay disjoint (a 22-long train can't overhang into the next row's lanes)
   // biome progression (color shift every ~600m)
   const bi=Math.floor(dist/600)%BIOMES.length; if(bi!==biomeIdx) setBiome(bi, true);   // announce every zone, incl. the first at run start
   scene.background.lerp(_bg, Math.min(1,dt*2)); scene.fog.color.lerp(_fog, Math.min(1,dt*2));
