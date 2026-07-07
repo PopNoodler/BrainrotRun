@@ -179,12 +179,12 @@
   <div id="pmMissions" style="width:min(90vw,360px);display:flex;flex-direction:column;gap:7px;margin-top:14px"></div>
 </div>
 
-<div id="verTag">BRAINROT RUSH 3D v110</div>
+<div id="verTag">BRAINROT RUSH 3D v111</div>
 <div id="err" style="position:fixed;left:8px;right:8px;bottom:24px;z-index:30;display:none;background:rgba(120,10,20,.92);color:#fff;font:600 12px monospace;padding:8px 12px;border-radius:8px;white-space:pre-wrap"></div>
 
 <script type="module">
 import * as THREE from 'three';
-const GAME_VERSION='v110';
+const GAME_VERSION='v111';
 const el=id=>document.getElementById(id);
 const setLS=(k,v)=>{ try{ localStorage.setItem(k,v); }catch(e){} };   // safe write (Safari private mode throws on setItem)
 const reduceMotion=(()=>{ try{ return matchMedia('(prefers-reduced-motion: reduce)').matches; }catch(e){ return false; } })();   // a11y: damp shake + FOV kick
@@ -262,7 +262,7 @@ function setBiome(i,announce){ biomeIdx=i; const b=BIOMES[i]; _bg.setHex(b.bg); 
   if(zoneTrainTexs){ trainMats.forEach((mt,k)=>{ mt.map=zoneTrainTexs[i][k]; mt.needsUpdate=true; }); truckMats.forEach((mt,k)=>{ mt.map=zoneTruckTexs[i][k]; mt.needsUpdate=true; }); }   // zone-skinned trains/trucks
   if(zoneScenery){ if(curScn) for(const g of curScn) g.visible=false; curScn=zoneScenery[i]; for(const g of curScn) g.visible=true; }   // swap in this zone's themed roadside scenery
   if(giantOf){ if(curGiant) curGiant.visible=false; curGiant=giantOf[i];   // swap in this zone's giant character, ahead of the player
-    if(curGiant){ curGiant.visible=true; curGiant.position.z=55+Math.random()*40; curGiant.position.x=(Math.random()<0.5?-1:1)*(11.5+Math.random()*2.5); } }
+    if(curGiant){ curGiant.visible=true; gPulse=0; curGiant.position.z=55+Math.random()*40; curGiant.position.x=(Math.random()<0.5?-1:1)*(11.5+Math.random()*2.5); } }
   if(floaties&&propMats){ for(const f of floaties) f.material=propMats[i][(Math.random()*propMats[i].length)|0]; }   // zone-themed floating props
   if(announce && state===PLAY){ const zb=el('zone'); zb.textContent=b.emoji+' '+b.name+' ZONE'; zb.style.color=b.accent;
     zb.style.opacity='1'; zb.style.transform='scale(1.06)'; playMotif(b); setGate(b);
@@ -551,7 +551,7 @@ magRing.rotation.x=Math.PI/2; magRing.visible=false; scene.add(magRing);
 const shieldBub=new THREE.Mesh(new THREE.SphereGeometry(1.25,18,14), new THREE.MeshBasicMaterial({color:0x4fd0ff,transparent:true,opacity:0.16,depthWrite:false}));
 shieldBub.visible=false; scene.add(shieldBub);
 // ---- ZONE ACTORS: one giant model per character + themed floating props (created here so CM exists) ----
-const GIANT_SPAN=115; let quipT=0;
+const GIANT_SPAN=115; let quipT=0, gPulse=0;
 giantOf={};
 BIOMES.forEach((b,i)=>{ const g=b.giant(); g.scale.setScalar(b.gs); g.visible=false;
   g.rotation.y=Math.PI+((i%2)?0.35:-0.35);   // giants face the oncoming runner
@@ -1156,7 +1156,8 @@ function update(dt){
     else if(an==='sway'){ curGiant.position.y=Math.sin(tRun*1.1)*0.12; curGiant.rotation.z=Math.sin(tRun*0.9)*0.07; }   // swimming/majestic sway
     else curGiant.position.y=Math.sin(tRun*1.2)*0.15;
     if(curGiant.position.z< -25){ curGiant.position.z+=GIANT_SPAN; curGiant.position.x=(Math.random()<0.5?-1:1)*(11.5+Math.random()*2.5); }
-    if(quipT<=0 && gz>6 && curGiant.position.z<=6){ quipT=6; popup(curGiant.position.x>0?2.4:-2.4,4.6,5,BIOMES[biomeIdx].quip,BIOMES[biomeIdx].accent); playMotif(BIOMES[biomeIdx]); } }
+    if(quipT<=0 && gz>6 && curGiant.position.z<=6){ quipT=6; gPulse=1; popup(curGiant.position.x>0?2.4:-2.4,4.6,5,BIOMES[biomeIdx].quip,BIOMES[biomeIdx].accent); playMotif(BIOMES[biomeIdx]); }
+    gPulse=Math.max(0,gPulse-dt*2.5); curGiant.scale.setScalar(BIOMES[biomeIdx].gs*(1+gPulse*0.12)); }   // excited hop-pulse when it greets you
   if(quipT>0)quipT-=dt;
   for(const f of floaties){ f.position.z-=dz*0.55; f.position.y=f.userData.by+Math.sin(tRun*0.8+f.userData.ph)*0.5; if(f.position.z< -15) f.position.z+=192; }   // themed props drift by (parallax)
   flyer.visible=(biomeIdx===2);   // Bombardiro's bomber only patrols his own zone
