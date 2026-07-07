@@ -177,12 +177,12 @@
   <div id="pmMissions" style="width:min(90vw,360px);display:flex;flex-direction:column;gap:7px;margin-top:14px"></div>
 </div>
 
-<div id="verTag">BRAINROT RUSH 3D v106</div>
+<div id="verTag">BRAINROT RUSH 3D v107</div>
 <div id="err" style="position:fixed;left:8px;right:8px;bottom:24px;z-index:30;display:none;background:rgba(120,10,20,.92);color:#fff;font:600 12px monospace;padding:8px 12px;border-radius:8px;white-space:pre-wrap"></div>
 
 <script type="module">
 import * as THREE from 'three';
-const GAME_VERSION='v106';
+const GAME_VERSION='v107';
 const el=id=>document.getElementById(id);
 const setLS=(k,v)=>{ try{ localStorage.setItem(k,v); }catch(e){} };   // safe write (Safari private mode throws on setItem)
 const reduceMotion=(()=>{ try{ return matchMedia('(prefers-reduced-motion: reduce)').matches; }catch(e){ return false; } })();   // a11y: damp shake + FOV kick
@@ -919,7 +919,7 @@ function collectCoin(c){ c.got=true; bumpCombo(); coinPulse=0.13;
 const menuBlocked=()=>!el('tut').classList.contains('hidden')||!el('shop').classList.contains('hidden')||!el('trophies').classList.contains('hidden');   // an overlay is covering the menu
 function move(d){ if(state!==PLAY||paused)return; const t=Math.max(0,Math.min(2,P.lane+d)); if(t!==P.lane){P.lane=t;sLane();} }
 function doJump(){ P.vy=JUMPV; P.grounded=false; coyoteT=0; jumpBufT=0; P.roll=0; sq=0.22; sJump(); burst(P.x,P.y+0.2,0,7,playerTint,3,0.5); }
-function jump(){ if(state!==PLAY||paused)return; if(P.roll>0)return;
+function jump(){ if(state!==PLAY||paused)return;   // jump may CANCEL a roll (doJump zeroes P.roll) — roll→jump chains feel right
   if(P.grounded||coyoteT>0) doJump(); else jumpBufT=0.14; }   // buffer if pressed a touch early
 function roll(){ if(state!==PLAY||paused)return; if(!P.grounded){ P.vy=-JUMPV*0.9; } P.roll=0.55; sRoll(); }
 addEventListener('keydown',e=>{ if(e.repeat)return; const k=e.key.toLowerCase();   // ignore OS auto-repeat (was machine-gunning lane changes on held keys)
@@ -1069,7 +1069,7 @@ function update(dt){
   }
   if(P.y<=support){ if(P.vy<-0.1&&!P.grounded){ sLand(); sq=-0.24; burst(P.x,P.y+0.1,0,Math.min(12,3+Math.floor(-P.vy*0.25)),playerTint,3.5,0.4); } P.y=support; P.vy=0; P.grounded=true; } else P.grounded=false;   // dust scales with impact speed
   // coyote time + buffered jump for responsive controls
-  if(P.grounded){ coyoteT=0.10; if(jumpBufT>0 && P.roll<=0) doJump(); } else if(coyoteT>0) coyoteT-=dt;
+  if(P.grounded){ coyoteT=0.10; if(jumpBufT>0) doJump(); } else if(coyoteT>0) coyoteT-=dt;   // buffered jump fires even through a roll (jump cancels roll)
   if(jumpBufT>0) jumpBufT-=dt;
   // roof-surf reward: standing on a train/truck roof drips a bonus (rewards the jump-on-trains mechanic)
   if(P.grounded && support>0.5){ roofT+=dt; if(roofT>=0.6){ roofT-=0.6; bumpCombo(); const b=comboMult(); coins$+=b; runSurf++;
