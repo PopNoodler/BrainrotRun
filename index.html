@@ -177,12 +177,12 @@
   <div id="pmMissions" style="width:min(90vw,360px);display:flex;flex-direction:column;gap:7px;margin-top:14px"></div>
 </div>
 
-<div id="verTag">BRAINROT RUSH 3D v102</div>
+<div id="verTag">BRAINROT RUSH 3D v103</div>
 <div id="err" style="position:fixed;left:8px;right:8px;bottom:24px;z-index:30;display:none;background:rgba(120,10,20,.92);color:#fff;font:600 12px monospace;padding:8px 12px;border-radius:8px;white-space:pre-wrap"></div>
 
 <script type="module">
 import * as THREE from 'three';
-const GAME_VERSION='v102';
+const GAME_VERSION='v103';
 const el=id=>document.getElementById(id);
 const setLS=(k,v)=>{ try{ localStorage.setItem(k,v); }catch(e){} };   // safe write (Safari private mode throws on setItem)
 const reduceMotion=(()=>{ try{ return matchMedia('(prefers-reduced-motion: reduce)').matches; }catch(e){ return false; } })();   // a11y: damp shake + FOV kick
@@ -254,9 +254,10 @@ const BIOMES=[
   {name:'CHIMPANZINI BANANINI',  emoji:'🍌', accent:'#ffe14d', bg:0x1a3a14, fog:0x245422, ground:0x2e5424, build:[0xf2d133,0x4e9a44,0x7a5230,0xffe14d,0x3a7a30], giant:buildChimpanzini,gs:3.1, anim:'hop', motif:[700,900,700,1100], quip:'CHIMPANZINI BANANINI! 🐒🍌',      props:['🍌','🐒','🌴']},
 ];
 let biomeIdx=-1; const _bg=new THREE.Color(0x241635), _fog=new THREE.Color(0x2a1c40); const _tmpC=new THREE.Color();
-var giantOf=null, curGiant=null, floaties=null, propMats=null, zoneScenery=null, curScn=null, zoneTO=0;   // late-bound zone actors (created after the builders' materials exist)
+var giantOf=null, curGiant=null, floaties=null, propMats=null, zoneScenery=null, curScn=null, zoneTO=0, zoneTrainTexs=null, zoneTruckTexs=null;   // late-bound zone actors (created after the builders' materials exist)
 function setBiome(i,announce){ biomeIdx=i; const b=BIOMES[i]; _bg.setHex(b.bg); _fog.setHex(b.fog);
   groundMat.color.setHex(b.ground); sideMat.color.copy(_tmpC.setHex(b.ground)).multiplyScalar(0.6);
+  if(zoneTrainTexs){ trainMats.forEach((mt,k)=>{ mt.map=zoneTrainTexs[i][k]; mt.needsUpdate=true; }); truckMats.forEach((mt,k)=>{ mt.map=zoneTruckTexs[i][k]; mt.needsUpdate=true; }); }   // zone-skinned trains/trucks
   if(zoneScenery){ if(curScn) for(const g of curScn) g.visible=false; curScn=zoneScenery[i]; for(const g of curScn) g.visible=true; }   // swap in this zone's themed roadside scenery
   if(giantOf){ if(curGiant) curGiant.visible=false; curGiant=giantOf[i];   // swap in this zone's giant character, ahead of the player
     if(curGiant){ curGiant.visible=true; curGiant.position.z=55+Math.random()*40; curGiant.position.x=(Math.random()<0.5?-1:1)*(11.5+Math.random()*2.5); } }
@@ -672,6 +673,9 @@ function truckTexture(hex){ const c=document.createElement('canvas'); c.width=25
   g.fillStyle='rgba(0,0,0,0.3)'; g.fillRect(0,28,256,8);                                       // container latch rail
   return new THREE.CanvasTexture(c); }
 const truckMats=[0xe08a2a,0x2aa0a0,0xbf3b6b,0x5a8f3a,0x6a5acf].map(c=>new THREE.MeshLambertMaterial({map:truckTexture(c)}));
+// per-zone obstacle skins: pre-generate every zone's train/truck textures from its palette (the BIOMES build[] colors), swapped on zone change
+zoneTrainTexs=BIOMES.map(b=>b.build.map(c=>trainTexture(c)));
+zoneTruckTexs=BIOMES.map(b=>b.build.map(c=>truckTexture(c)));
 function arrowTex(bg, up){ const c=document.createElement('canvas'); c.width=128; c.height=128; const g=c.getContext('2d');
   g.fillStyle=bg; g.fillRect(0,0,128,128); g.strokeStyle='rgba(255,255,255,0.92)'; g.lineWidth=14; g.lineCap='round'; g.lineJoin='round';
   for(let i=0;i<2;i++){ const yo=i*40; g.beginPath();
