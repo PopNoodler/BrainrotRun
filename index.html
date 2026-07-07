@@ -176,12 +176,12 @@
   <div id="pmMissions" style="width:min(90vw,360px);display:flex;flex-direction:column;gap:7px;margin-top:14px"></div>
 </div>
 
-<div id="verTag">BRAINROT RUSH 3D v96</div>
+<div id="verTag">BRAINROT RUSH 3D v97</div>
 <div id="err" style="position:fixed;left:8px;right:8px;bottom:24px;z-index:30;display:none;background:rgba(120,10,20,.92);color:#fff;font:600 12px monospace;padding:8px 12px;border-radius:8px;white-space:pre-wrap"></div>
 
 <script type="module">
 import * as THREE from 'three';
-const GAME_VERSION='v96';
+const GAME_VERSION='v97';
 const el=id=>document.getElementById(id);
 const setLS=(k,v)=>{ try{ localStorage.setItem(k,v); }catch(e){} };   // safe write (Safari private mode throws on setItem)
 const reduceMotion=(()=>{ try{ return matchMedia('(prefers-reduced-motion: reduce)').matches; }catch(e){ return false; } })();   // a11y: damp shake + FOV kick
@@ -743,7 +743,7 @@ let xpBanked=0, surfBanked=0, nearBanked=0, distBanked=0;   // same delta-bankin
 let speed=SPEED0, dist=0, coins$=0, tRun=0, shake=0, lastMile=0, coinPulse=0, nextStorm=0;
 const FOV0=62, FOVMAX=72;   // camera FOV widens with speed for a stronger sense of motion
 let pMag=0, pX2=0, pShield=false, pInv=0, pHover=0;   // magnet timer, 2x timer, shield flag, post-shield invuln, hoverboard timer
-let combo=0, comboT=0, roofT=0, trailT=0;   // coin-combo streak, its decay timer, roof-surf accumulator, fire-trail emitter timer
+let combo=0, comboT=0, roofT=0, trailT=0, slowT=0;   // coin-combo streak, its decay timer, roof-surf accumulator, fire-trail emitter timer, slow-mo beat
 let runSurf=0, runNear=0, runMaxMult=1;     // per-run mission stats (surfs, near-misses, best combo mult)
 const comboMult=()=>Math.min(5, 1+((combo/5)|0));   // x1 → x5 as the streak grows (every 5 chain steps)
 function bumpCombo(){ combo++; comboT=2.6; }
@@ -948,7 +948,7 @@ function quitToMenu(){ // abandon run: bank coins collected so far, record best,
 // ============ start / over ============
 function reset(){ clearWorld(); speed=SPEED0; dist=0; coins$=0; tRun=0; shake=0; lastMile=0; lastOpen=1; nextZ=40; nextStorm=600+Math.random()*500;
   pMag=0; pX2=0; pShield=false; pInv=0; pHover=(UPG.headstart||0)*1.6; coyoteT=0; jumpBufT=0; combo=0; comboT=0; roofT=0;
-  runSurf=0; runNear=0; runMaxMult=1; biomeIdx=-1; coinPulse=0; quipT=0;
+  runSurf=0; runNear=0; runMaxMult=1; biomeIdx=-1; coinPulse=0; quipT=0; trailT=0; slowT=0;
   camera.fov=FOV0; camera.updateProjectionMatrix(); el('pups').textContent='';
   P.lane=1; P.x=0; P.y=0; P.vy=0; P.roll=0; P.grounded=true; sq=0; pitch=0; camDip=0; gate.visible=false; bestPassed=false; bestMark.visible=false;
   continues=0; bankedThisRun=0; missionsTicked=false; xpBanked=0; surfBanked=0; nearBanked=0; distBanked=0;
@@ -1003,6 +1003,7 @@ function doContinue(){ if(continues>=1 || totalCoins<REVIVE_COST) return; totalC
 
 // ============ update ============
 function update(dt){
+  if(slowT>0){ slowT-=dt; dt*=0.55; }   // near-miss slow-mo beat (world time dilates ~0.25s)
   tRun+=dt; speed=Math.min(SPEEDMAX, SPEED0+dist*0.03); dist+=speed*dt;   // peak speed at ~1400m, matching the difficulty curve
   while(dist>=lastMile+500){ lastMile+=500; coins$+=50; popup(P.x,3.9,0,lastMile+'m 🥁 TUNG TUNG TUNG!','#ffe14d'); burst(P.x,2.2,0,12,0xffe14d,7,0.9); sTung(); }  // milestone = the signature drum moment
   // rare COIN STORM: a rain of high coins across all lanes (roof height — grabbed mid-jump/roof-run, never buried in trains)
@@ -1048,7 +1049,7 @@ function update(dt){
     if(!o.nm && pz>0 && o.z<=0){ o.nm=true; const dxl=Math.abs(P.x-laneOf(o.lane));
       if((o.type==='train'||o.type==='truck') && dxl>0.95 && dxl<LANEX+1.0 && P.y<o.top-0.4){   // near-miss: adjacent-lane train sweeps past you on the ground
         bumpCombo(); const b=2*comboMult(); coins$+=b; runNear++;
-        popup(P.x,2.3,0,'NEAR MISS +'+b,'#4fd0ff'); burst(P.x+(laneOf(o.lane)>P.x?0.7:-0.7),1.5,0,7,0x4fd0ff,5,0.7); sLane();
+        popup(P.x,2.3,0,'NEAR MISS +'+b,'#4fd0ff'); burst(P.x+(laneOf(o.lane)>P.x?0.7:-0.7),1.5,0,7,0x4fd0ff,5,0.7); sLane(); slowT=0.14;
       } else if(o.type==='low' && dxl<0.9 && P.y>o.top-0.3){   // cleanly jumped a barrier in your lane
         bumpCombo(); const b=comboMult(); coins$+=b; runNear++; popup(P.x,P.y+0.5,0,'HOP! +'+b,'#8ef07e'); burst(P.x,P.y,0,5,0x8ef07e,4,0.6);
       } else if(o.type==='over' && dxl<0.9 && P.roll>0){   // cleanly rolled under an overhead bar in your lane

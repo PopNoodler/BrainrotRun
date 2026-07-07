@@ -51,3 +51,10 @@ All verified structurally (node --check module + el-id/feature checks) and deplo
 - **v75** Geometry audit fixes (palm fronds fanned inward; banana tips floating) — verified against real three.js Euler math.
 - **v76** Milestones are now TUNG TUNG TUNG drum moments; zone-aware game-over quips.
 - Infra: Pages moved to workflow deploys w/ cancel-in-progress after transient "Deployment failed" emails; strict one-deploy-batch discipline.
+
+## Never-stop session (2026-07-07) — v77→v97
+- Juice/feel: combo fire-trail, per-character zone jingles, squash-stretch tuning, key-repeat fix, snappier dodge, roll camera dip, resume 3-2-1 countdown, near-miss slow-mo, landing dust ∝ impact.
+- Progression: Brainrot Level (+2% coins/lvl), trophy wall w/ live progress, char grid, unlock fanfare, best-run marker, coin storms, level/achievement game-over callouts.
+- Content: 8th character Frigo Camelo (render-verified), zigzag coin trails, zone gates.
+- Sim/bug passes (real extracted code): progression clean; mission dupe-kind reroll FIXED; daily streak verified; spawner 30k rows — long-train row-overlap wall FIXED; 30fps roof-landing tunneling FIXED (swept check).
+- Render-verified scenery fixes (hangar dome, cactus arms), power-up world visuals (magnet ring, shield bubble), adaptive quality governor, pause-menu missions.
