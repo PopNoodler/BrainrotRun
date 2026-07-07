@@ -177,12 +177,12 @@
   <div id="pmMissions" style="width:min(90vw,360px);display:flex;flex-direction:column;gap:7px;margin-top:14px"></div>
 </div>
 
-<div id="verTag">BRAINROT RUSH 3D v101</div>
+<div id="verTag">BRAINROT RUSH 3D v102</div>
 <div id="err" style="position:fixed;left:8px;right:8px;bottom:24px;z-index:30;display:none;background:rgba(120,10,20,.92);color:#fff;font:600 12px monospace;padding:8px 12px;border-radius:8px;white-space:pre-wrap"></div>
 
 <script type="module">
 import * as THREE from 'three';
-const GAME_VERSION='v101';
+const GAME_VERSION='v102';
 const el=id=>document.getElementById(id);
 const setLS=(k,v)=>{ try{ localStorage.setItem(k,v); }catch(e){} };   // safe write (Safari private mode throws on setItem)
 const reduceMotion=(()=>{ try{ return matchMedia('(prefers-reduced-motion: reduce)').matches; }catch(e){ return false; } })();   // a11y: damp shake + FOV kick
@@ -541,6 +541,8 @@ const board=new THREE.Mesh(new THREE.BoxGeometry(0.95,0.16,2.1),
   new THREE.MeshStandardMaterial({color:0x7ef07e,emissive:0x2a8f3a,emissiveIntensity:0.55,roughness:0.3,metalness:0.4}));
 board.visible=false; scene.add(board);
 // magnet field ring + shield bubble (world-space power-up readability)
+const podium=new THREE.Mesh(new THREE.CylinderGeometry(1.5,1.7,0.25,24), new THREE.MeshStandardMaterial({color:0x3a2f6a,roughness:0.4,metalness:0.3}));
+podium.position.y=-0.12; scene.add(podium);   // menu-only display base
 const magRing=new THREE.Mesh(new THREE.TorusGeometry(1.6,0.05,8,32), new THREE.MeshBasicMaterial({color:0xff4d6d,transparent:true,opacity:0.4,depthWrite:false}));
 magRing.rotation.x=Math.PI/2; magRing.visible=false; scene.add(magRing);
 const shieldBub=new THREE.Mesh(new THREE.SphereGeometry(1.25,18,14), new THREE.MeshBasicMaterial({color:0x4fd0ff,transparent:true,opacity:0.16,depthWrite:false}));
@@ -888,6 +890,7 @@ function musicTick(){ if(muted||musicOff){return;} const a=ac(); if(!a)return; c
   if(step%4===0) playMus(root/2,0.34,'triangle',0.09,t);                                   // bass on quarters
   if(step%4===0||step===10||step===12) playMus(78,0.12,'triangle',0.14,52);                // "tung tung tung" wooden drum pulse (Sahur's signature)
   if(step%2===0) playMus(root*Math.pow(2,MSCALE[(step/2)%MSCALE.length]/12),0.17,'square',0.035,t); // arp on 8ths
+  if(step%2===1 && comboMult()>=3) playMus(2400,0.03,'square',0.022,t);            // hi-hat layer kicks in at x3+ combo
   musStep++; }
 function startMusic(){ if(musIntv||muted||musicOff)return; musStep=0; musIntv=setInterval(musicTick,150); }  // 100bpm 16ths
 function stopMusic(){ if(musIntv){ clearInterval(musIntv); musIntv=null; } }
@@ -1185,6 +1188,7 @@ function animate(now){ const rawDt=(now-last)/1000; last=now; let dt=rawDt>0.05?
     if(perfAcc/perfN > 1/45) perfStrikes++; else perfStrikes=0; perfAcc=0; perfN=0;
     if(perfStrikes>=3){ perfDegraded=true; renderer.setPixelRatio(1); } } }
   try{
+    podium.visible=(state===MENU);
     if(state===MENU && player){ camera.position.set(0,3.4,-6.8); camera.lookAt(0,1.7,0);
       player.position.set(0, Math.sin(now*0.0022)*0.09, 0); player.rotation.y+=dt*0.6; player.rotation.z=Math.sin(now*0.0016)*0.05; }   // gentle idle bob + sway to show off the model
     if(state===PLAY&&!paused) update(dt);
