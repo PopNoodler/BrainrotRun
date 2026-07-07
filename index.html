@@ -176,12 +176,12 @@
   <div id="pmMissions" style="width:min(90vw,360px);display:flex;flex-direction:column;gap:7px;margin-top:14px"></div>
 </div>
 
-<div id="verTag">BRAINROT RUSH 3D v98</div>
+<div id="verTag">BRAINROT RUSH 3D v99</div>
 <div id="err" style="position:fixed;left:8px;right:8px;bottom:24px;z-index:30;display:none;background:rgba(120,10,20,.92);color:#fff;font:600 12px monospace;padding:8px 12px;border-radius:8px;white-space:pre-wrap"></div>
 
 <script type="module">
 import * as THREE from 'three';
-const GAME_VERSION='v98';
+const GAME_VERSION='v99';
 const el=id=>document.getElementById(id);
 const setLS=(k,v)=>{ try{ localStorage.setItem(k,v); }catch(e){} };   // safe write (Safari private mode throws on setItem)
 const reduceMotion=(()=>{ try{ return matchMedia('(prefers-reduced-motion: reduce)').matches; }catch(e){ return false; } })();   // a11y: damp shake + FOV kick
@@ -740,11 +740,11 @@ const MENU=0,PLAY=1,OVER=2,DYING=3; let state=MENU, paused=false;
 let deathT=0, deathVy=0, deathSpin=0;   // crash tumble animation
 let continues=0, bankedThisRun=0, missionsTicked=false; const REVIVE_COST=150;   // one paid revive per run; delta-bank keeps coin accounting exact
 let xpBanked=0, surfBanked=0, nearBanked=0, distBanked=0;   // same delta-banking for XP/lifetime stats across revives
-let speed=SPEED0, dist=0, coins$=0, tRun=0, shake=0, lastMile=0, coinPulse=0, nextStorm=0;
+let speed=SPEED0, dist=0, coins$=0, tRun=0, shake=0, lastMile=0, coinPulse=0, nextStorm=0, lastLap=0;
 const FOV0=62, FOVMAX=72;   // camera FOV widens with speed for a stronger sense of motion
 let pMag=0, pX2=0, pShield=false, pInv=0, pHover=0;   // magnet timer, 2x timer, shield flag, post-shield invuln, hoverboard timer
 let combo=0, comboT=0, roofT=0, trailT=0, slowT=0;   // coin-combo streak, its decay timer, roof-surf accumulator, fire-trail emitter timer, slow-mo beat
-let runSurf=0, runNear=0, runMaxMult=1;     // per-run mission stats (surfs, near-misses, best combo mult)
+let runSurf=0, runNear=0, runMaxMult=1, runGems=0;     // per-run mission stats (surfs, near-misses, best combo mult)
 const comboMult=()=>Math.min(5, 1+((combo/5)|0));   // x1 → x5 as the streak grows (every 5 chain steps)
 function bumpCombo(){ combo++; comboT=2.6; }
 const P={ lane:1, x:0, y:0, vy:0, roll:0, grounded:true };
@@ -761,6 +761,7 @@ const MPOOL=[
   {kind:'surf', reward:300, roll:()=>{const g=[4,6,8][(Math.random()*3)|0];       return {goal:g, desc:'🚂 Surf '+g+' train roofs'};}},
   {kind:'near', reward:300, roll:()=>{const g=[5,8,12][(Math.random()*3)|0];      return {goal:g, desc:'😎 Pull '+g+' near-misses'};}},
   {kind:'combo',reward:350, roll:()=>{const g=[3,4,5][(Math.random()*3)|0];       return {goal:g, desc:'🔥 Reach a x'+g+' combo'};}},
+  {kind:'gems', reward:250, roll:()=>{const g=[3,5,8][(Math.random()*3)|0];      return {goal:g, desc:'💎 Collect '+g+' gems'};}},
   {kind:'runs', reward:150, roll:()=>{const g=[3,5][(Math.random()*2)|0];         return {goal:g, desc:'🎮 Play '+g+' runs'};}},
 ];
 function newMission(avoid){ let t; do{ t=MPOOL[(Math.random()*MPOOL.length)|0]; }while(avoid&&avoid.includes(t.kind)&&avoid.length<MPOOL.length);
@@ -885,7 +886,7 @@ function activatePU(t){ if(t==='magnet')pMag=8+UPG.magnet*2; else if(t==='x2')pX
 function collectCoin(c){ c.got=true; bumpCombo(); coinPulse=0.13;
   const lvlBoost=Math.min(1.5, 1+lvl*0.02);   // Brainrot Level pays: +2% coins per level, cap +50%
   const m=comboMult(), val=Math.round(m*(pX2>0?2:1)*(1+UPG.coinboost*0.1)*lvlBoost*(c.val||1)); coins$+=val;
-  if(c.gem){ stats.gems=(stats.gems||0)+1; sPow(); burst(c.mesh.position.x,c.mesh.position.y,c.z,10,0x6cf0ff,5,0.8); popup(c.mesh.position.x,c.mesh.position.y+0.7,c.z,'💎 +'+val,'#6cf0ff'); }
+  if(c.gem){ stats.gems=(stats.gems||0)+1; runGems++; sPow(); burst(c.mesh.position.x,c.mesh.position.y,c.z,10,0x6cf0ff,5,0.8); popup(c.mesh.position.x,c.mesh.position.y+0.7,c.z,'💎 +'+val,'#6cf0ff'); }
   else { const cp=880*(1+(m-1)*0.14); tone(cp,0.07,'square',0.09,cp*1.5);   // coin pitch rises with combo (x1=880Hz → x5≈1373Hz)
     burst(c.mesh.position.x,c.mesh.position.y,c.z,4,0xffe14d,3.2,0.6); if(val>1) popup(c.mesh.position.x, c.mesh.position.y+0.6, c.z, '+'+val, m>1?'#ff9d3d':'#ffe14d'); }
   poolCoin(c); }
@@ -941,7 +942,7 @@ function quitToMenu(){ // abandon run: bank coins collected so far, record best,
   const gain=Math.max(0, coins$-bankedThisRun); totalCoins+=gain; bankedThisRun=coins$; setLS('br_coins',totalCoins);
   stats.coinTot+=gain; saveProg();   // quit-banked coins still count toward lifetime stats
   if(Math.floor(dist)>best && dist>10){ best=Math.floor(dist); setLS('br_best',best); }
-  if(!missionsTicked){ tickMissions({dist:Math.floor(dist), coins:coins$, surf:runSurf, near:runNear, runs:1, maxMult:runMaxMult}); missionsTicked=true; renderMissions(); }
+  if(!missionsTicked){ tickMissions({dist:Math.floor(dist), coins:coins$, surf:runSurf, near:runNear, runs:1, maxMult:runMaxMult, gems:runGems}); missionsTicked=true; renderMissions(); }
   stopMusic(); paused=false; resuming=false; clearTimeout(resumeTO); el('zone').style.opacity='0'; state=MENU; el('combovig').style.opacity=0; el('combobar').style.opacity=0; magRing.visible=false; shieldBub.visible=false; board.visible=false; bestMark.visible=false;
   if(player){ player.rotation.set(0, player.userData.baseRotY||0, 0); player.scale.set(1,1,1); }
   el('pauseMenu').classList.add('hidden'); el('hud').classList.add('hidden'); el('pauseBtn').style.display='none'; el('pauseBtn').textContent='⏸';
@@ -950,7 +951,7 @@ function quitToMenu(){ // abandon run: bank coins collected so far, record best,
 // ============ start / over ============
 function reset(){ clearWorld(); speed=SPEED0; dist=0; coins$=0; tRun=0; shake=0; lastMile=0; lastOpen=1; nextZ=40; nextStorm=600+Math.random()*500;
   pMag=0; pX2=0; pShield=false; pInv=0; pHover=(UPG.headstart||0)*1.6; coyoteT=0; jumpBufT=0; combo=0; comboT=0; roofT=0;
-  runSurf=0; runNear=0; runMaxMult=1; biomeIdx=-1; coinPulse=0; quipT=0; trailT=0; slowT=0;
+  runSurf=0; runNear=0; runMaxMult=1; runGems=0; lastLap=0; biomeIdx=-1; coinPulse=0; quipT=0; trailT=0; slowT=0;
   camera.fov=FOV0; camera.updateProjectionMatrix(); el('pups').textContent='';
   P.lane=1; P.x=0; P.y=0; P.vy=0; P.roll=0; P.grounded=true; sq=0; pitch=0; camDip=0; gate.visible=false; bestPassed=false; bestMark.visible=false;
   continues=0; bankedThisRun=0; missionsTicked=false; xpBanked=0; surfBanked=0; nearBanked=0; distBanked=0;
@@ -976,7 +977,7 @@ function finishGameOver(){ state=OVER;
   const isBest = Math.floor(dist)>best && dist>10;
   if(isBest){ best=Math.floor(dist); setLS('br_best',best); }
   const firstEnd=!missionsTicked;
-  let mGain=0; if(!missionsTicked){ mGain=tickMissions({dist:Math.floor(dist), coins:coins$, surf:runSurf, near:runNear, runs:1, maxMult:runMaxMult}); missionsTicked=true; renderMissions(); }  // tick once per run
+  let mGain=0; if(!missionsTicked){ mGain=tickMissions({dist:Math.floor(dist), coins:coins$, surf:runSurf, near:runNear, runs:1, maxMult:runMaxMult, gems:runGems}); missionsTicked=true; renderMissions(); }  // tick once per run
   // lifetime stats + XP (delta-banked so revives never double-count)
   if(firstEnd) stats.runs++;
   stats.surf+=runSurf-surfBanked; surfBanked=runSurf;
@@ -1009,6 +1010,9 @@ function update(dt){
   if(slowT>0){ slowT-=dt; dt*=0.55; }   // near-miss slow-mo beat (world time dilates ~0.25s)
   tRun+=dt; speed=Math.min(SPEEDMAX, SPEED0+dist*0.03); dist+=speed*dt;   // peak speed at ~1400m, matching the difficulty curve
   while(dist>=lastMile+500){ lastMile+=500; coins$+=50; popup(P.x,3.9,0,lastMile+'m 🥁 TUNG TUNG TUNG!','#ffe14d'); burst(P.x,2.2,0,12,0xffe14d,7,0.9); sTung(); }  // milestone = the signature drum moment
+  // lap milestone: every full zone cycle (4200m) is a LAP — recurring goals for marathon runs
+  const lap=Math.floor(dist/4200); if(lap>lastLap){ lastLap=lap; coins$+=500;
+    popup(P.x,3.9,2,'🌍 LAP '+(lap+1)+' — +🪙500!','#ffe14d'); burst(P.x,2.5,0,24,0xffe14d,9,1.0); sTung(); vib(70); }
   // rare COIN STORM: a rain of high coins across all lanes (roof height — grabbed mid-jump/roof-run, never buried in trains)
   if(dist>=nextStorm){ nextStorm=dist+700+Math.random()*600;
     for(let r=0;r<6;r++) for(let L=0;L<3;L++) addCoin(L, Z_SPAWN+r*2.6+L*0.6, 3.4);
