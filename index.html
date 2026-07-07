@@ -175,12 +175,12 @@
   <button class="btn2" id="quitBtn">🏠 QUIT TO MENU</button>
 </div>
 
-<div id="verTag">BRAINROT RUSH 3D v88</div>
+<div id="verTag">BRAINROT RUSH 3D v89</div>
 <div id="err" style="position:fixed;left:8px;right:8px;bottom:24px;z-index:30;display:none;background:rgba(120,10,20,.92);color:#fff;font:600 12px monospace;padding:8px 12px;border-radius:8px;white-space:pre-wrap"></div>
 
 <script type="module">
 import * as THREE from 'three';
-const GAME_VERSION='v88';
+const GAME_VERSION='v89';
 const el=id=>document.getElementById(id);
 const setLS=(k,v)=>{ try{ localStorage.setItem(k,v); }catch(e){} };   // safe write (Safari private mode throws on setItem)
 const reduceMotion=(()=>{ try{ return matchMedia('(prefers-reduced-motion: reduce)').matches; }catch(e){ return false; } })();   // a11y: damp shake + FOV kick
@@ -802,18 +802,18 @@ let stats; try{ stats=JSON.parse(localStorage.getItem('br_stats'))||{}; }catch(e
 stats=Object.assign({runs:0,surf:0,near:0,distTot:0,coinTot:0,revives:0,maxMult:1},stats);
 let ach; try{ ach=JSON.parse(localStorage.getItem('br_ach'))||[]; }catch(e){ ach=[]; }
 const ACH=[
-  {id:'first',  e:'🎬', name:'First Run',      desc:'Finish a run',                 r:50,  t:()=>stats.runs>=1},
-  {id:'run800', e:'🏃', name:'Marathoner',     desc:'Run 800m in one go',           r:150, t:()=>best>=800},
-  {id:'run1500',e:'🚀', name:'Ultra Runner',   desc:'Run 1500m in one go',          r:300, t:()=>best>=1500},
-  {id:'tour',   e:'🌍', name:'World Tour',     desc:'Visit all 7 zones in one run', r:800, t:()=>best>=3600},
-  {id:'combo5', e:'🔥', name:'Max Combo',      desc:'Reach a x5 combo',             r:200, t:()=>stats.maxMult>=5},
-  {id:'surf25', e:'🚂', name:'Roof Surfer',    desc:'Surf 25 train roofs (total)',  r:200, t:()=>stats.surf>=25},
-  {id:'near50', e:'😎', name:'Daredevil',      desc:'50 near-misses (total)',       r:200, t:()=>stats.near>=50},
-  {id:'rich',   e:'💰', name:'Coin Hoarder',   desc:'Bank 5,000 lifetime coins',    r:250, t:()=>stats.coinTot>=5000},
-  {id:'own3',   e:'🎭', name:'Collector',      desc:'Own 3 characters',             r:200, t:()=>owned.length>=3},
-  {id:'own7',   e:'👑', name:'Full Squad',     desc:'Own every character',          r:1000,t:()=>owned.length>=CHARACTERS.length},
-  {id:'revive', e:'💚', name:'Never Give Up',  desc:'Use a Continue',               r:100, t:()=>stats.revives>=1},
-  {id:'lvl10',  e:'🧠', name:'Brainrot Brain', desc:'Reach Level 10',               r:500, t:()=>lvl>=10},
+  {id:'first',  e:'🎬', name:'First Run',      desc:'Finish a run',                 r:50,  t:()=>stats.runs>=1, p:()=>stats.runs+'/1'},
+  {id:'run800', e:'🏃', name:'Marathoner',     desc:'Run 800m in one go',           r:150, t:()=>best>=800, p:()=>Math.min(best,800)+'/800m'},
+  {id:'run1500',e:'🚀', name:'Ultra Runner',   desc:'Run 1500m in one go',          r:300, t:()=>best>=1500, p:()=>Math.min(best,1500)+'/1500m'},
+  {id:'tour',   e:'🌍', name:'World Tour',     desc:'Visit all 7 zones in one run', r:800, t:()=>best>=3600, p:()=>Math.min(best,3600)+'/3600m'},
+  {id:'combo5', e:'🔥', name:'Max Combo',      desc:'Reach a x5 combo',             r:200, t:()=>stats.maxMult>=5, p:()=>'x'+(stats.maxMult||1)+'/x5'},
+  {id:'surf25', e:'🚂', name:'Roof Surfer',    desc:'Surf 25 train roofs (total)',  r:200, t:()=>stats.surf>=25, p:()=>Math.min(stats.surf,25)+'/25'},
+  {id:'near50', e:'😎', name:'Daredevil',      desc:'50 near-misses (total)',       r:200, t:()=>stats.near>=50, p:()=>Math.min(stats.near,50)+'/50'},
+  {id:'rich',   e:'💰', name:'Coin Hoarder',   desc:'Bank 5,000 lifetime coins',    r:250, t:()=>stats.coinTot>=5000, p:()=>fmtC(Math.min(stats.coinTot,5000))+'/5k'},
+  {id:'own3',   e:'🎭', name:'Collector',      desc:'Own 3 characters',             r:200, t:()=>owned.length>=3, p:()=>owned.length+'/3'},
+  {id:'own7',   e:'👑', name:'Full Squad',     desc:'Own every character',          r:1000,t:()=>owned.length>=CHARACTERS.length, p:()=>owned.length+'/'+CHARACTERS.length},
+  {id:'revive', e:'💚', name:'Never Give Up',  desc:'Use a Continue',               r:100, t:()=>stats.revives>=1, p:()=>stats.revives+'/1'},
+  {id:'lvl10',  e:'🧠', name:'Brainrot Brain', desc:'Reach Level 10',               r:500, t:()=>lvl>=10, p:()=>lvl+'/10'},
 ];
 function saveProg(){ setLS('br_lvl',lvl); setLS('br_xpin',xpIn); setLS('br_stats',JSON.stringify(stats)); setLS('br_ach',JSON.stringify(ach)); }
 function addXP(n){ xpIn+=n; let ups=0; while(xpIn>=xpNeed(lvl)){ xpIn-=xpNeed(lvl); lvl++; ups++; totalCoins+=25*lvl; }
@@ -824,7 +824,7 @@ function checkAch(){ const got=[]; for(const a of ACH){ if(!ach.includes(a.id)&&
 function renderTrophies(){ const km=(stats.distTot/1000).toFixed(1);
   el('trophyList').innerHTML='<div class="msn" style="text-align:center"><div class="msnTop" style="justify-content:center"><span>🏃 '+stats.runs+' runs · 📏 '+km+' km · 🚂 '+stats.surf+' surfs · 😎 '+stats.near+' near-misses</span></div></div>'
   + ACH.map(a=>{ const ok=ach.includes(a.id);
-  return '<div class="msn'+(ok?' msnDone':'')+'" style="opacity:'+(ok?'1':'.55')+'"><div class="msnTop"><span>'+(ok?'✅ ':'')+a.e+' <b>'+a.name+'</b> — '+a.desc+'</span><b>🪙'+a.r+'</b></div></div>'; }).join(''); }
+  return '<div class="msn'+(ok?' msnDone':'')+'" style="opacity:'+(ok?'1':'.62')+'"><div class="msnTop"><span>'+(ok?'✅ ':'')+a.e+' <b>'+a.name+'</b> — '+a.desc+(ok||!a.p?'':' · <span style="color:#9fe6ff">'+a.p()+'</span>')+'</span><b>🪙'+a.r+'</b></div></div>'; }).join(''); }
 function renderCharGrid(){ const box=el('charGrid'); if(!box)return;
   box.innerHTML=CHARACTERS.map((c,i)=>{ const own=isOwned(c), sel=i===curChar;
     return '<button class="cg'+(sel?' cgSel':'')+(own?'':' cgLock')+'" data-i="'+i+'">'+c.emo+(own?'':'<span class="cgPrice">'+(c.cost>=1000?(c.cost/1000)+'k':c.cost)+'</span>')+'</button>'; }).join('');
