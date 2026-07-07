@@ -175,12 +175,12 @@
   <button class="btn2" id="quitBtn">🏠 QUIT TO MENU</button>
 </div>
 
-<div id="verTag">BRAINROT RUSH 3D v89</div>
+<div id="verTag">BRAINROT RUSH 3D v90</div>
 <div id="err" style="position:fixed;left:8px;right:8px;bottom:24px;z-index:30;display:none;background:rgba(120,10,20,.92);color:#fff;font:600 12px monospace;padding:8px 12px;border-radius:8px;white-space:pre-wrap"></div>
 
 <script type="module">
 import * as THREE from 'three';
-const GAME_VERSION='v89';
+const GAME_VERSION='v90';
 const el=id=>document.getElementById(id);
 const setLS=(k,v)=>{ try{ localStorage.setItem(k,v); }catch(e){} };   // safe write (Safari private mode throws on setItem)
 const reduceMotion=(()=>{ try{ return matchMedia('(prefers-reduced-motion: reduce)').matches; }catch(e){ return false; } })();   // a11y: damp shake + FOV kick
@@ -991,12 +991,14 @@ function update(dt){
   // roll timer
   if(P.roll>0)P.roll-=dt;
   // vertical physics
+  const prevY=P.y;
   P.vy-=(P.vy>0?GRAV:GRAV*1.5)*dt; P.y+=P.vy*dt;   // fast-fall: heavier gravity on descent kills float (air time 0.64s→0.58s, apex 4.29 still clears trains)
   // support height: ground or top of an obstacle we're standing over (same lane region, within z span)
+  // swept check: at 30fps a fast fall steps >1.0/frame and could tunnel through the 0.5 landing band (sim: 2-3.5% of clean roof landings crashed)
   let support=0;
   for(const o of obstacles){ if(o.type==='over')continue;
     const dxl=Math.abs(P.x-laneOf(o.lane)); if(dxl>1.2)continue;
-    if(o.z<=0.5 && o.z2>=-0.5){ if(P.y >= o.top-0.5) support=Math.max(support,o.top); }
+    if(o.z<=0.5 && o.z2>=-0.5){ if(P.y >= o.top-0.5 || (prevY>=o.top-0.05 && P.y<o.top)) support=Math.max(support,o.top); }
   }
   if(P.y<=support){ if(P.vy<-0.1&&!P.grounded){ sLand(); sq=-0.24; burst(P.x,P.y+0.1,0,Math.min(12,3+Math.floor(-P.vy*0.25)),playerTint,3.5,0.4); } P.y=support; P.vy=0; P.grounded=true; } else P.grounded=false;   // dust scales with impact speed
   // coyote time + buffered jump for responsive controls
