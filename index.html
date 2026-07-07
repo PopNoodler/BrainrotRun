@@ -176,12 +176,12 @@
   <div id="pmMissions" style="width:min(90vw,360px);display:flex;flex-direction:column;gap:7px;margin-top:14px"></div>
 </div>
 
-<div id="verTag">BRAINROT RUSH 3D v94</div>
+<div id="verTag">BRAINROT RUSH 3D v95</div>
 <div id="err" style="position:fixed;left:8px;right:8px;bottom:24px;z-index:30;display:none;background:rgba(120,10,20,.92);color:#fff;font:600 12px monospace;padding:8px 12px;border-radius:8px;white-space:pre-wrap"></div>
 
 <script type="module">
 import * as THREE from 'three';
-const GAME_VERSION='v94';
+const GAME_VERSION='v95';
 const el=id=>document.getElementById(id);
 const setLS=(k,v)=>{ try{ localStorage.setItem(k,v); }catch(e){} };   // safe write (Safari private mode throws on setItem)
 const reduceMotion=(()=>{ try{ return matchMedia('(prefers-reduced-motion: reduce)').matches; }catch(e){ return false; } })();   // a11y: damp shake + FOV kick
@@ -1138,7 +1138,12 @@ let last=performance.now();
 function showErr(err){ const d=el('err'); const msg=(err&&err.message)||err&&err.toString()||'unknown'; if(d){ d.textContent='⚠️ '+msg; d.style.display='block'; } console.error(err); }
 addEventListener('error', e=>showErr(e.error||e.message));
 addEventListener('unhandledrejection', e=>showErr(e.reason));
-function animate(now){ let dt=(now-last)/1000; last=now; if(dt>0.05)dt=0.05;
+let perfAcc=0, perfN=0, perfStrikes=0, perfDegraded=false;   // adaptive quality governor
+function animate(now){ const rawDt=(now-last)/1000; last=now; let dt=rawDt>0.05?0.05:rawDt;
+  // sustained <45fps during play → drop to 1x pixel ratio once (big GPU savings on weak phones)
+  if(state===PLAY && !paused && !perfDegraded){ perfAcc+=rawDt; if(++perfN>=90){
+    if(perfAcc/perfN > 1/45) perfStrikes++; else perfStrikes=0; perfAcc=0; perfN=0;
+    if(perfStrikes>=3){ perfDegraded=true; renderer.setPixelRatio(1); } } }
   try{
     if(state===MENU && player){ camera.position.set(0,3.4,-6.8); camera.lookAt(0,1.7,0);
       player.position.set(0, Math.sin(now*0.0022)*0.09, 0); player.rotation.y+=dt*0.6; player.rotation.z=Math.sin(now*0.0016)*0.05; }   // gentle idle bob + sway to show off the model
