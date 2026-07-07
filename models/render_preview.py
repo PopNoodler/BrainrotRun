@@ -204,7 +204,45 @@ def build_chimpanzini():
     for s in (-1,1):
         cyl(0.12,0.6,(s*0.22,0.55,0),FUR); box(0.24,0.14,0.44,(s*0.22,0.14,0.14),FUR)
 
-BUILDS={'sahur':build_sahur,'tralalero':build_tralalero,'bombardiro':build_bombardiro,'lirili':build_lirili,'boneca':build_boneca,'cappuccino':build_cappuccino,'chimpanzini':build_chimpanzini}
+def build_scenery():
+    # Blender-native equivalents of the 7 zone scenery pieces (verifies the DESIGNS read; game-side
+    # orientations already verified numerically against real three.js).
+    global OFFX
+    OFFX=-9.6   # Sahur: log stump
+    cyl(0.85,3.5,(0,1.75,0),WOOD); cyl(0.83,0.16,(0,3.56,0),WOODD)
+    OFFX=-6.4   # Tralalero: wave + giant Nike
+    w=sph(2.4,(0,0.2,0),(1,0.35,1),BLUE)
+    box(2.6,1.4,4.4,(1.9,1.0,0),SNEAK); box(2.9,0.5,4.7,(1.9,0.25,0),SOLE); sph(1.15,(1.9,1.1,1.9),m=BELLY)
+    OFFX=-3.2   # Bombardiro: hangar + tower
+    box(4.5,1.8,5.5,(0,0.9,0),CROC)
+    r=cyl(2.25,5.6,(0,1.8,0),METAL,rot=(math.radians(90),0,0)); r.scale=(1,0.5,1)   # flattened dome (local y = world up after rotX90)
+    box(0.4,5,0.4,(2.6,2.5,0),METAL); box(0.4,5,0.4,(3.6,2.5,0),METAL); box(2.6,1.6,2.6,(3.1,5.6,0),CROC)
+    OFFX=0.0    # Lirilì: cactus + rock
+    h=4.0
+    cyl(0.55,h,(0,h/2+0.5,0),CACT); sph(0.55,(0,h+0.5,0),m=CACT)
+    a1=cyl(0.3,1.1,(0.68,h*0.55,0),CACT,rot=(0,math.radians(-28),0))   # blender: ry tilts outward on +x side
+    a2=cyl(0.3,0.9,(-0.64,h*0.4,0),CACT,rot=(0,math.radians(28),0))
+    sph(0.3,(0,h+1.15,0),m=MOUTH)
+    bpy.ops.mesh.primitive_ico_sphere_add(radius=1.2,location=T(2.4,0.8,0),subdivisions=1); setm(bpy.context.active_object,WOODD)
+    OFFX=3.2    # Boneca: tire stack (blender torus is already flat)
+    for k in range(3):
+        bpy.ops.mesh.primitive_torus_add(major_radius=1.1,minor_radius=0.42,location=T(0,0.45+k*0.85,0)); setm(bpy.context.active_object,TIRE)
+    OFFX=6.4    # Cappuccino: giant cup
+    ch=3.0
+    cyl(1.3,ch,(0,ch/2,0),CUP)
+    f=sph(1.25,(0,ch+0.15,0),(1,0.4,1),FOAM)
+    hd=bpy.ops.mesh.primitive_torus_add(major_radius=0.6,minor_radius=0.16,location=T(1.5,ch*0.55,0),rotation=(math.radians(90),0,0)); setm(bpy.context.active_object,CUP)
+    OFFX=9.6    # Chimpanzini: palm + banana
+    ph=4.6
+    cyl(0.38,ph,(0,ph/2,0),FUR)
+    for k in range(5):
+        a=k*2*math.pi/5
+        bpy.ops.mesh.primitive_cone_add(radius1=0.5,depth=2.6,location=T(math.cos(a)*1.1, ph+0.3, math.sin(a)*1.1),rotation=(0,1.25,-a))
+        setm(bpy.context.active_object,CACT)
+    b=cyl(0.55,2.6,(2.6,1.6,0),BANANA,rot=(0,0,math.radians(-50))); sph(0.22,(3.4,0.7,0),m=BTIP); sph(0.2,(1.8,2.5,0),m=BTIP)
+    OFFX=0
+
+BUILDS={'sahur':build_sahur,'tralalero':build_tralalero,'bombardiro':build_bombardiro,'lirili':build_lirili,'boneca':build_boneca,'cappuccino':build_cappuccino,'chimpanzini':build_chimpanzini,'scenery':build_scenery}
 if NAME=='lineup':
     names=['sahur','tralalero','bombardiro','lirili','boneca','cappuccino','chimpanzini']
     for i,nm in enumerate(names):
@@ -214,9 +252,9 @@ else:
     BUILDS.get(NAME, build_sahur)()
 
 # ---- camera (track-to target) + light + workbench render ----
-LINE = NAME=='lineup'
+LINE = NAME in ('lineup','scenery')
 bpy.ops.object.empty_add(location=(0,0,1.4)); tgt=bpy.context.active_object
-bpy.ops.object.camera_add(location=(0,-25,3.4) if LINE else (4.2,-5.6,2.4)); cam=bpy.context.active_object
+bpy.ops.object.camera_add(location=((0,-30,3.8) if NAME=='scenery' else (0,-25,3.4)) if LINE else (4.2,-5.6,2.4)); cam=bpy.context.active_object
 tc=cam.constraints.new('TRACK_TO'); tc.target=tgt; tc.track_axis='TRACK_NEGATIVE_Z'; tc.up_axis='UP_Y'
 cam.data.lens=40 if LINE else 52; bpy.context.scene.camera=cam
 bpy.ops.object.light_add(type='SUN',location=(-4,-6,9)); bpy.context.active_object.data.energy=3.2

@@ -175,12 +175,12 @@
   <button class="btn2" id="quitBtn">🏠 QUIT TO MENU</button>
 </div>
 
-<div id="verTag">BRAINROT RUSH 3D v86</div>
+<div id="verTag">BRAINROT RUSH 3D v87</div>
 <div id="err" style="position:fixed;left:8px;right:8px;bottom:24px;z-index:30;display:none;background:rgba(120,10,20,.92);color:#fff;font:600 12px monospace;padding:8px 12px;border-radius:8px;white-space:pre-wrap"></div>
 
 <script type="module">
 import * as THREE from 'three';
-const GAME_VERSION='v86';
+const GAME_VERSION='v87';
 const el=id=>document.getElementById(id);
 const setLS=(k,v)=>{ try{ localStorage.setItem(k,v); }catch(e){} };   // safe write (Safari private mode throws on setItem)
 const reduceMotion=(()=>{ try{ return matchMedia('(prefers-reduced-motion: reduce)').matches; }catch(e){ return false; } })();   // a11y: damp shake + FOV kick
@@ -529,15 +529,15 @@ const mkScn=[
       g.add(part(new THREE.SphereGeometry(1.15,12,10), CM.belly, 0,1.1,1.9)); }
     else { const r=1.8+Math.random()*1.8; const w=part(new THREE.SphereGeometry(r,14,10), CM.blue, 0,0.2,0); w.scale.y=0.35; g.add(w); } return g; },
   ()=>{ const g=new THREE.Group();   // Bombardiro: hangars + watchtowers
-    if(Math.random()<0.5){ g.add(part(new THREE.BoxGeometry(4.5,2.4,5.5), CM.croc, 0,1.2,0));
-      g.add(part(new THREE.CylinderGeometry(2.3,2.3,5.6,12), CM.metal, 0,2.4,0, Math.PI/2,0,0)); }
+    if(Math.random()<0.5){ g.add(part(new THREE.BoxGeometry(4.5,1.8,5.5), CM.croc, 0,0.9,0));
+      const roof=part(new THREE.CylinderGeometry(2.25,2.25,5.6,14), CM.metal, 0,1.8,0, Math.PI/2,0,0); roof.scale.z=0.5; g.add(roof); }   // flattened full-width quonset dome (render-verified; round r2.3 read as a giant ball)
     else { g.add(part(new THREE.BoxGeometry(0.4,5,0.4), CM.metal, -0.8,2.5,0)); g.add(part(new THREE.BoxGeometry(0.4,5,0.4), CM.metal, 0.8,2.5,0));
       g.add(part(new THREE.BoxGeometry(2.6,1.6,2.6), CM.croc, 0,5.6,0)); } return g; },
   ()=>{ const g=new THREE.Group();   // Lirilì: desert cacti + rocks
     if(Math.random()<0.35){ g.add(part(new THREE.DodecahedronGeometry(1+Math.random()*1.2,0), M.woodD, 0,0.8,0)); }
     else { const h=2.5+Math.random()*2.5; g.add(part(new THREE.CapsuleGeometry(0.55,h,4,10), CM.cactus, 0,h/2+0.5,0));
-      g.add(part(new THREE.CapsuleGeometry(0.3,1.1,4,8), CM.cactus, 0.85,h*0.55,0, 0,0,-0.5));
-      g.add(part(new THREE.CapsuleGeometry(0.3,0.9,4,8), CM.cactus, -0.8,h*0.4,0, 0,0,0.5));
+      g.add(part(new THREE.CapsuleGeometry(0.3,1.1,4,8), CM.cactus, 0.68,h*0.55,0, 0,0,-0.5));
+      g.add(part(new THREE.CapsuleGeometry(0.3,0.9,4,8), CM.cactus, -0.64,h*0.4,0, 0,0,0.5));   // arms overlap the trunk (were only tangent — could read detached)
       if(Math.random()<0.3) g.add(part(new THREE.SphereGeometry(0.3,8,6), CM.mouthD, 0,h+1.15,0)); } return g; },
   ()=>{ const g=new THREE.Group(); const n=2+(Math.random()*3|0);   // Boneca: stacked tires
     for(let k=0;k<n;k++){ const t=part(new THREE.TorusGeometry(1.1,0.42,10,18), CM.tire, 0,0.45+k*0.85,0); t.rotation.x=Math.PI/2; g.add(t); } return g; },
