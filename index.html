@@ -175,12 +175,12 @@
   <button class="btn2" id="quitBtn">🏠 QUIT TO MENU</button>
 </div>
 
-<div id="verTag">BRAINROT RUSH 3D v87</div>
+<div id="verTag">BRAINROT RUSH 3D v88</div>
 <div id="err" style="position:fixed;left:8px;right:8px;bottom:24px;z-index:30;display:none;background:rgba(120,10,20,.92);color:#fff;font:600 12px monospace;padding:8px 12px;border-radius:8px;white-space:pre-wrap"></div>
 
 <script type="module">
 import * as THREE from 'three';
-const GAME_VERSION='v87';
+const GAME_VERSION='v88';
 const el=id=>document.getElementById(id);
 const setLS=(k,v)=>{ try{ localStorage.setItem(k,v); }catch(e){} };   // safe write (Safari private mode throws on setItem)
 const reduceMotion=(()=>{ try{ return matchMedia('(prefers-reduced-motion: reduce)').matches; }catch(e){ return false; } })();   // a11y: damp shake + FOV kick
@@ -338,7 +338,8 @@ const CM={ blue:pmat(0x3f7fbf,0.5), belly:pmat(0xe0e7ec,0.5), tooth:pmat(0xf5f5e
   cactus:pmat(0x4e9a44,0.65), cactusD:pmat(0x33702c,0.7), spine:pmat(0xe6e090,0.5), ele:pmat(0x5aa050,0.6), tusk:pmat(0xf2eede,0.35), skin:pmat(0xd19a70,0.65),
   tire:pmat(0x141418,0.75), tread:pmat(0x08080a,0.8), hub:pmat(0x9195a0,0.35,0.8), frog:pmat(0x5aa03a,0.6), frogBelly:pmat(0xd0d488,0.55), shoe:pmat(0x24222c,0.5),
   cup:pmat(0x8c6345,0.6), coffee:pmat(0x4d2e1a,0.5), foam:pmat(0xf5ebd4,0.7), blade:pmat(0xbfc6cf,0.35,0.6), hilt:pmat(0x1f1a1a,0.5),
-  banana:pmat(0xf2d133,0.6), btip:pmat(0x4d3819,0.6), fur:pmat(0x7a5230,0.75) };
+  banana:pmat(0xf2d133,0.6), btip:pmat(0x4d3819,0.6), fur:pmat(0x7a5230,0.75),
+  fridge:pmat(0xebeff5,0.4), fridgeD:pmat(0x9aa3ad,0.5), camel:pmat(0xc2955a,0.7), camelD:pmat(0x99703f,0.7) };
 function legPair(g, legMat, footMat, hipX, hipY, footZ){ const legs=[];
   for(const s of [-1,1]){ const leg=new THREE.Group();
     leg.add(part(new THREE.CapsuleGeometry(0.17,0.55,4,10), legMat, 0,-0.32,0));
@@ -453,15 +454,32 @@ function buildChimpanzini(){ const g=new THREE.Group();
   for(const s of [-1,1]) g.add(part(new THREE.CylinderGeometry(0.09,0.09,0.6,10), CM.fur, s*0.44,1.55,0.05));   // arms
   g.userData={legs:legPair(g, CM.fur, CM.fur, 0.22, 0.72, 0.14)}; return g;
 }
+// -- Frigo Camelo: a camel with a fridge for a body (render-verified) --
+function buildFrigoCamelo(){ const g=new THREE.Group();
+  g.add(part(new THREE.BoxGeometry(1.15,1.6,0.85), CM.fridge, 0,1.55,0));
+  g.add(part(new THREE.BoxGeometry(1.17,0.05,0.87), CM.fridgeD, 0,1.95,0));       // freezer split line
+  g.add(part(new THREE.BoxGeometry(0.06,0.5,0.07), CM.fridgeD, 0.44,2.15,0.46));  // freezer handle
+  g.add(part(new THREE.BoxGeometry(0.06,0.8,0.07), CM.fridgeD, 0.44,1.35,0.46));  // main handle
+  g.add(part(new THREE.SphereGeometry(0.3,12,10), CM.camel, 0,2.5,-0.12));        // humps
+  g.add(part(new THREE.SphereGeometry(0.26,12,10), CM.camel, 0,2.46,-0.38));
+  g.add(part(new THREE.CylinderGeometry(0.19,0.19,0.9,10), CM.camel, 0,2.7,0.22, -0.42,0,0));   // neck S-curve
+  g.add(part(new THREE.CylinderGeometry(0.17,0.17,0.7,10), CM.camel, 0,3.25,0.38, -0.17,0,0));
+  const head=part(new THREE.SphereGeometry(0.3,14,10), CM.camel, 0,3.62,0.45); head.scale.set(1,0.85,1.1); g.add(head);
+  const sn=part(new THREE.SphereGeometry(0.2,12,8), CM.camelD, 0,3.52,0.75); sn.scale.set(0.85,0.7,1); g.add(sn);   // snout
+  for(const s of [-1,1]) g.add(part(new THREE.SphereGeometry(0.08,8,6), CM.camelD, s*0.22,3.8,0.35));   // ears
+  eyePair(g, null, 0.16, 3.7, 0.62, 0.075);
+  g.userData={legs:legPair(g, CM.camel, CM.camelD, 0.3, 0.78, 0.1)}; return g;
+}
 // ---- character roster (procedural builders — always distinct, never a broken load) ----
 const CHARACTERS=[
-  {id:'sahur',      name:'Tung Tung Tung Sahur',   cost:0,    build:buildSahur,      tint:0xc79a5a},
-  {id:'tralalero',  name:'Tralalero Tralala 🦈',   cost:1500, build:buildTralalero,  tint:0x4fd0ff},
-  {id:'bombardiro', name:'Bombardiro Crocodilo 🐊✈️', cost:3000, build:buildBombardiro, tint:0x8bbf5a},
-  {id:'lirili',     name:'Lirilì Larilà 🌵🐘',      cost:5000, build:buildLirili,     tint:0x7ed957},
-  {id:'boneca',     name:'Boneca Ambalabu 🐸🛞',    cost:8000, build:buildBoneca,     tint:0x6cc040},
-  {id:'cappuccino', name:'Cappuccino Assassino ☕🗡️', cost:12000, build:buildCappuccino, tint:0xc79a6a},
-  {id:'chimpanzini', name:'Chimpanzini Bananini 🐒🍌', cost:16000, build:buildChimpanzini, tint:0xf2d133},
+  {id:'sahur',      name:'Tung Tung Tung Sahur',   cost:0,    build:buildSahur,      tint:0xc79a5a, emo:'🪵'},
+  {id:'tralalero',  name:'Tralalero Tralala 🦈',   cost:1500, build:buildTralalero,  tint:0x4fd0ff, emo:'🦈'},
+  {id:'bombardiro', name:'Bombardiro Crocodilo 🐊✈️', cost:3000, build:buildBombardiro, tint:0x8bbf5a, emo:'🐊'},
+  {id:'lirili',     name:'Lirilì Larilà 🌵🐘',      cost:5000, build:buildLirili,     tint:0x7ed957, emo:'🌵'},
+  {id:'boneca',     name:'Boneca Ambalabu 🐸🛞',    cost:8000, build:buildBoneca,     tint:0x6cc040, emo:'🐸'},
+  {id:'cappuccino', name:'Cappuccino Assassino ☕🗡️', cost:12000, build:buildCappuccino, tint:0xc79a6a, emo:'☕'},
+  {id:'chimpanzini', name:'Chimpanzini Bananini 🐒🍌', cost:16000, build:buildChimpanzini, tint:0xf2d133, emo:'🍌'},
+  {id:'frigo',      name:'Frigo Camelo 🐫🧊',       cost:20000, build:buildFrigoCamelo, tint:0xdfe8f0, emo:'🐫'},
 ];
 let owned; try{ owned=JSON.parse(localStorage.getItem('br_owned')||'["sahur"]')||['sahur']; }catch(e){ owned=['sahur']; }
 const isOwned=c=>c.id==='sahur'||owned.includes(c.id);
@@ -793,7 +811,7 @@ const ACH=[
   {id:'near50', e:'😎', name:'Daredevil',      desc:'50 near-misses (total)',       r:200, t:()=>stats.near>=50},
   {id:'rich',   e:'💰', name:'Coin Hoarder',   desc:'Bank 5,000 lifetime coins',    r:250, t:()=>stats.coinTot>=5000},
   {id:'own3',   e:'🎭', name:'Collector',      desc:'Own 3 characters',             r:200, t:()=>owned.length>=3},
-  {id:'own7',   e:'👑', name:'Full Squad',     desc:'Own all 7 characters',         r:1000,t:()=>owned.length>=7},
+  {id:'own7',   e:'👑', name:'Full Squad',     desc:'Own every character',          r:1000,t:()=>owned.length>=CHARACTERS.length},
   {id:'revive', e:'💚', name:'Never Give Up',  desc:'Use a Continue',               r:100, t:()=>stats.revives>=1},
   {id:'lvl10',  e:'🧠', name:'Brainrot Brain', desc:'Reach Level 10',               r:500, t:()=>lvl>=10},
 ];
@@ -809,7 +827,7 @@ function renderTrophies(){ const km=(stats.distTot/1000).toFixed(1);
   return '<div class="msn'+(ok?' msnDone':'')+'" style="opacity:'+(ok?'1':'.55')+'"><div class="msnTop"><span>'+(ok?'✅ ':'')+a.e+' <b>'+a.name+'</b> — '+a.desc+'</span><b>🪙'+a.r+'</b></div></div>'; }).join(''); }
 function renderCharGrid(){ const box=el('charGrid'); if(!box)return;
   box.innerHTML=CHARACTERS.map((c,i)=>{ const own=isOwned(c), sel=i===curChar;
-    return '<button class="cg'+(sel?' cgSel':'')+(own?'':' cgLock')+'" data-i="'+i+'">'+BIOMES[i].emoji+(own?'':'<span class="cgPrice">'+(c.cost>=1000?(c.cost/1000)+'k':c.cost)+'</span>')+'</button>'; }).join('');
+    return '<button class="cg'+(sel?' cgSel':'')+(own?'':' cgLock')+'" data-i="'+i+'">'+c.emo+(own?'':'<span class="cgPrice">'+(c.cost>=1000?(c.cost/1000)+'k':c.cost)+'</span>')+'</button>'; }).join('');
   box.querySelectorAll('.cg').forEach(b=>b.onclick=()=>{ curChar=+b.dataset.i; loadCharacter(CHARACTERS[curChar]); refreshCharUI(); }); }
 
 // ============ audio ============

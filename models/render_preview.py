@@ -33,6 +33,7 @@ FROG=mat('frog',(0.35,0.63,0.23)); FROGB=mat('frogB',(0.82,0.83,0.53)); SHOE=mat
 CUP=mat('cup',(0.55,0.39,0.27)); COFFEE=mat('coffee',(0.3,0.18,0.1)); FOAM=mat('foam',(0.96,0.92,0.83))
 BLADE=mat('blade',(0.75,0.78,0.82)); HILT=mat('hilt',(0.12,0.1,0.1))
 BANANA=mat('banana',(0.95,0.82,0.2)); BTIP=mat('btip',(0.3,0.22,0.1)); FUR=mat('fur',(0.5,0.35,0.22)); FACE=mat('face',(0.82,0.66,0.48))
+FRIDGE=mat('fridge',(0.92,0.94,0.97)); FRIDGED=mat('fridgeD',(0.6,0.65,0.72)); CAMEL=mat('camel',(0.76,0.58,0.35)); CAMELD=mat('camelD',(0.6,0.44,0.25))
 
 OFFX=0.0
 def T(x,y,z): return (x+OFFX, -z, y)     # three.js (Y-up, faces +Z) -> Blender (Z-up, faces -Y); OFFX spaces a lineup
@@ -204,6 +205,26 @@ def build_chimpanzini():
     for s in (-1,1):
         cyl(0.12,0.6,(s*0.22,0.55,0),FUR); box(0.24,0.14,0.44,(s*0.22,0.14,0.14),FUR)
 
+def build_frigo():
+    # white fridge body with door lines + handles
+    box(1.15,1.6,0.85,(0,1.55,0),FRIDGE)
+    box(1.17,0.05,0.87,(0,1.95,0),FRIDGED)                       # freezer split line
+    box(0.06,0.5,0.07,(0.44,2.15,0.46),FRIDGED)                  # freezer handle
+    box(0.06,0.8,0.07,(0.44,1.35,0.46),FRIDGED)                  # main handle
+    # camel humps on top
+    sph(0.3,(0,2.5,-0.12),m=CAMEL); sph(0.26,(0,2.46,-0.38),m=CAMEL)
+    # camel neck (two segments angling up-forward) + head + snout + ears + eyes
+    cyl(0.19,0.9,(0,2.7,0.22),CAMEL,rot=(math.radians(-24),0,0))
+    cyl(0.17,0.7,(0,3.25,0.38),CAMEL,rot=(math.radians(-10),0,0))
+    sph(0.3,(0,3.62,0.45),(1,0.85,1.1),CAMEL)
+    sph(0.2,(0,3.52,0.75),(0.85,0.7,1),CAMELD)                   # snout
+    for s in (-1,1):
+        sph(0.08,(s*0.22,3.8,0.35),m=CAMELD)                     # ears
+        sph(0.075,(s*0.16,3.7,0.62),m=WHITE); sph(0.04,(s*0.16,3.71,0.68),m=BLACK)
+    # tan legs + hooves
+    for s in (-1,1):
+        cyl(0.14,0.8,(s*0.3,0.5,0),CAMEL); box(0.26,0.16,0.4,(s*0.3,0.1,0.1),CAMELD)
+
 def build_scenery():
     # Blender-native equivalents of the 7 zone scenery pieces (verifies the DESIGNS read; game-side
     # orientations already verified numerically against real three.js).
@@ -242,7 +263,7 @@ def build_scenery():
     b=cyl(0.55,2.6,(2.6,1.6,0),BANANA,rot=(0,0,math.radians(-50))); sph(0.22,(3.4,0.7,0),m=BTIP); sph(0.2,(1.8,2.5,0),m=BTIP)
     OFFX=0
 
-BUILDS={'sahur':build_sahur,'tralalero':build_tralalero,'bombardiro':build_bombardiro,'lirili':build_lirili,'boneca':build_boneca,'cappuccino':build_cappuccino,'chimpanzini':build_chimpanzini,'scenery':build_scenery}
+BUILDS={'sahur':build_sahur,'tralalero':build_tralalero,'bombardiro':build_bombardiro,'lirili':build_lirili,'boneca':build_boneca,'cappuccino':build_cappuccino,'chimpanzini':build_chimpanzini,'frigo':build_frigo,'scenery':build_scenery}
 if NAME=='lineup':
     names=['sahur','tralalero','bombardiro','lirili','boneca','cappuccino','chimpanzini']
     for i,nm in enumerate(names):
