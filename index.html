@@ -177,12 +177,12 @@
   <div id="pmMissions" style="width:min(90vw,360px);display:flex;flex-direction:column;gap:7px;margin-top:14px"></div>
 </div>
 
-<div id="verTag">BRAINROT RUSH 3D v104</div>
+<div id="verTag">BRAINROT RUSH 3D v105</div>
 <div id="err" style="position:fixed;left:8px;right:8px;bottom:24px;z-index:30;display:none;background:rgba(120,10,20,.92);color:#fff;font:600 12px monospace;padding:8px 12px;border-radius:8px;white-space:pre-wrap"></div>
 
 <script type="module">
 import * as THREE from 'three';
-const GAME_VERSION='v104';
+const GAME_VERSION='v105';
 const el=id=>document.getElementById(id);
 const setLS=(k,v)=>{ try{ localStorage.setItem(k,v); }catch(e){} };   // safe write (Safari private mode throws on setItem)
 const reduceMotion=(()=>{ try{ return matchMedia('(prefers-reduced-motion: reduce)').matches; }catch(e){ return false; } })();   // a11y: damp shake + FOV kick
@@ -841,6 +841,7 @@ const ACH=[
   {id:'run800', e:'🏃', name:'Marathoner',     desc:'Run 800m in one go',           r:150, t:()=>best>=800, p:()=>Math.min(best,800)+'/800m'},
   {id:'run1500',e:'🚀', name:'Ultra Runner',   desc:'Run 1500m in one go',          r:300, t:()=>best>=1500, p:()=>Math.min(best,1500)+'/1500m'},
   {id:'tour',   e:'🌍', name:'World Tour',     desc:'Visit all 7 zones in one run', r:800, t:()=>best>=3600, p:()=>Math.min(best,3600)+'/3600m'},
+  {id:'lap2',   e:'♾️', name:'Infinity Runner', desc:'Run 2 full laps (8400m)',        r:1500,t:()=>best>=8400, p:()=>Math.min(best,8400)+'/8400m'},
   {id:'combo5', e:'🔥', name:'Max Combo',      desc:'Reach a x5 combo',             r:200, t:()=>stats.maxMult>=5, p:()=>'x'+(stats.maxMult||1)+'/x5'},
   {id:'surf25', e:'🚂', name:'Roof Surfer',    desc:'Surf 25 train roofs (total)',  r:200, t:()=>stats.surf>=25, p:()=>Math.min(stats.surf,25)+'/25'},
   {id:'near50', e:'😎', name:'Daredevil',      desc:'50 near-misses (total)',       r:200, t:()=>stats.near>=50, p:()=>Math.min(stats.near,50)+'/50'},
@@ -1132,7 +1133,9 @@ function update(dt){
   scene.background.lerp(_bg, Math.min(1,dt*2)); scene.fog.color.lerp(_fog, Math.min(1,dt*2));
   // recycle scenery
   for(const d of dashes){ d.position.z-=dz; d.scale.y=1+(speed-SPEED0)*0.03; if(d.position.z< -12) d.position.z+=234; }   // dashes stretch with speed
-  if(gate.visible){ gate.position.z-=dz; if(gate.position.z< -14) gate.visible=false; }   // ride through the zone gate
+  if(gate.visible){ const gpz=gate.position.z; gate.position.z-=dz;
+    if(gpz>0 && gate.position.z<=0){ burst(-4.6,4,0,8,0xffe14d,5,0.6); burst(4.6,4,0,8,0xffe14d,5,0.6); sLane(); }   // sparkle as you fly through
+    if(gate.position.z< -14) gate.visible=false; }
   for(const t of ties){ t.position.z-=dz; if(t.position.z< -12) t.position.z+=TIE_N*TIE_SP; }
   if(curScn) for(const g of curScn){ g.position.z-=dz; if(g.position.z< -16) g.position.z+=SCN_SPAN; }   // themed zone scenery scrolls by
   // zone giant: scrolls past, idles like itself, and shouts its catchphrase as it passes you
