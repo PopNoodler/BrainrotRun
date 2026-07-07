@@ -175,12 +175,12 @@
   <button class="btn2" id="quitBtn">🏠 QUIT TO MENU</button>
 </div>
 
-<div id="verTag">BRAINROT RUSH 3D v90</div>
+<div id="verTag">BRAINROT RUSH 3D v91</div>
 <div id="err" style="position:fixed;left:8px;right:8px;bottom:24px;z-index:30;display:none;background:rgba(120,10,20,.92);color:#fff;font:600 12px monospace;padding:8px 12px;border-radius:8px;white-space:pre-wrap"></div>
 
 <script type="module">
 import * as THREE from 'three';
-const GAME_VERSION='v90';
+const GAME_VERSION='v91';
 const el=id=>document.getElementById(id);
 const setLS=(k,v)=>{ try{ localStorage.setItem(k,v); }catch(e){} };   // safe write (Safari private mode throws on setItem)
 const reduceMotion=(()=>{ try{ return matchMedia('(prefers-reduced-motion: reduce)').matches; }catch(e){ return false; } })();   // a11y: damp shake + FOV kick
@@ -499,7 +499,11 @@ function refreshCharUI(){ const c=CHARACTERS[curChar]; el('charName').textConten
 function cycleChar(d){ curChar=(curChar+d+CHARACTERS.length)%CHARACTERS.length; loadCharacter(CHARACTERS[curChar]); refreshCharUI(); }
 function onPlay(){ const c=CHARACTERS[curChar];
   if(isOwned(c)){ setLS('br_char',c.id); startGame(); }
-  else if(totalCoins>=c.cost){ totalCoins-=c.cost; setLS('br_coins',totalCoins); owned.push(c.id); setLS('br_owned',JSON.stringify(owned)); setLS('br_char',c.id); el('mCoins').textContent=fmtC(totalCoins); refreshCharUI(); }
+  else if(totalCoins>=c.cost){ totalCoins-=c.cost; setLS('br_coins',totalCoins); owned.push(c.id); setLS('br_owned',JSON.stringify(owned)); setLS('br_char',c.id); el('mCoins').textContent=fmtC(totalCoins); refreshCharUI();
+    // celebrate the unlock — the biggest progression moment deserves fanfare
+    playMotif(BIOMES[curChar]||null); vib(50);
+    burst(0,2.2,0,24,c.tint||0xffe14d,8,1.0); burst(0,1.4,0,14,0xffe14d,6,0.8);
+    popup(0,2.8,0,'🎉 UNLOCKED — '+c.name+'!','#ffe14d'); }
 }
 // ---- daily-login bonus (streak) ----
 const dayKey=d=>d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate();
@@ -904,7 +908,7 @@ el('trophyBack').onclick=()=>{ el('trophies').classList.add('hidden'); el('menu'
 el('resumeBtn').onclick=togglePause;
 el('restartBtn').onclick=()=>{ el('pauseMenu').classList.add('hidden'); startGame(); };
 el('quitBtn').onclick=quitToMenu;
-el('shareBtn').onclick=()=>{ const txt='I ran '+Math.floor(dist)+'m in Brainrot Rush 🧠🇮🇹 — can you beat me?', url=location.href;
+el('shareBtn').onclick=()=>{ const txt='I ran '+Math.floor(dist)+'m as '+CHARACTERS[curChar].name+' in Brainrot Rush 🧠🇮🇹 — can you beat me?', url=location.href;
   if(navigator.share){ navigator.share({title:'Brainrot Rush',text:txt,url}).catch(()=>{}); }
   else if(navigator.clipboard){ navigator.clipboard.writeText(txt+' '+url).then(()=>{ el('shareBtn').textContent='✓ COPIED!'; setTimeout(()=>el('shareBtn').textContent='📤 SHARE SCORE',1500); }).catch(()=>{}); } };
 document.addEventListener('visibilitychange',()=>{ if(document.hidden && state===PLAY && !paused) togglePause(); });   // auto-pause when backgrounded — no unfair deaths
