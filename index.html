@@ -175,12 +175,12 @@
   <button class="btn2" id="quitBtn">🏠 QUIT TO MENU</button>
 </div>
 
-<div id="verTag">BRAINROT RUSH 3D v91</div>
+<div id="verTag">BRAINROT RUSH 3D v92</div>
 <div id="err" style="position:fixed;left:8px;right:8px;bottom:24px;z-index:30;display:none;background:rgba(120,10,20,.92);color:#fff;font:600 12px monospace;padding:8px 12px;border-radius:8px;white-space:pre-wrap"></div>
 
 <script type="module">
 import * as THREE from 'three';
-const GAME_VERSION='v91';
+const GAME_VERSION='v92';
 const el=id=>document.getElementById(id);
 const setLS=(k,v)=>{ try{ localStorage.setItem(k,v); }catch(e){} };   // safe write (Safari private mode throws on setItem)
 const reduceMotion=(()=>{ try{ return matchMedia('(prefers-reduced-motion: reduce)').matches; }catch(e){ return false; } })();   // a11y: damp shake + FOV kick
@@ -525,6 +525,11 @@ shadow.rotation.x=-Math.PI/2; shadow.position.y=0.02; scene.add(shadow);
 const board=new THREE.Mesh(new THREE.BoxGeometry(0.95,0.16,2.1),
   new THREE.MeshStandardMaterial({color:0x7ef07e,emissive:0x2a8f3a,emissiveIntensity:0.55,roughness:0.3,metalness:0.4}));
 board.visible=false; scene.add(board);
+// magnet field ring + shield bubble (world-space power-up readability)
+const magRing=new THREE.Mesh(new THREE.TorusGeometry(1.6,0.05,8,32), new THREE.MeshBasicMaterial({color:0xff4d6d,transparent:true,opacity:0.4,depthWrite:false}));
+magRing.rotation.x=Math.PI/2; magRing.visible=false; scene.add(magRing);
+const shieldBub=new THREE.Mesh(new THREE.SphereGeometry(1.25,18,14), new THREE.MeshBasicMaterial({color:0x4fd0ff,transparent:true,opacity:0.16,depthWrite:false}));
+shieldBub.visible=false; scene.add(shieldBub);
 // ---- ZONE ACTORS: one giant model per character + themed floating props (created here so CM exists) ----
 const GIANT_SPAN=115; let quipT=0;
 giantOf={};
@@ -922,7 +927,7 @@ function quitToMenu(){ // abandon run: bank coins collected so far, record best,
   stats.coinTot+=gain; saveProg();   // quit-banked coins still count toward lifetime stats
   if(Math.floor(dist)>best && dist>10){ best=Math.floor(dist); setLS('br_best',best); }
   if(!missionsTicked){ tickMissions({dist:Math.floor(dist), coins:coins$, surf:runSurf, near:runNear, runs:1, maxMult:runMaxMult}); missionsTicked=true; renderMissions(); }
-  stopMusic(); paused=false; state=MENU; el('combovig').style.opacity=0; el('combobar').style.opacity=0;
+  stopMusic(); paused=false; state=MENU; el('combovig').style.opacity=0; el('combobar').style.opacity=0; magRing.visible=false; shieldBub.visible=false; board.visible=false; bestMark.visible=false;
   if(player){ player.rotation.set(0, player.userData.baseRotY||0, 0); player.scale.set(1,1,1); }
   el('pauseMenu').classList.add('hidden'); el('hud').classList.add('hidden'); el('pauseBtn').style.display='none'; el('pauseBtn').textContent='⏸';
   el('menu').classList.remove('hidden'); el('mBest').textContent=best; el('mCoins').textContent=fmtC(totalCoins); refreshCharUI(); refreshDailyUI(); }
@@ -942,7 +947,7 @@ function startGame(){ ac(); reset(); setBestMark(); state=PLAY; paused=false;
   el('menu').classList.add('hidden'); el('gameover').classList.add('hidden'); el('hud').classList.remove('hidden'); el('pauseBtn').style.display='block'; startMusic(); }
 const QUIPS=['Tralalero Tralala 🦈','Bombardiro Crocodilo 🐊✈️','Sahur got tung\'d','Lirilì Larilà 🌵','skibidi sahur','Boneca Ambalabu 🐸','Cappuccino Assassino ☕','brainrot certified 🧠'];
 function die(){ if(state!==PLAY)return; state=DYING; deathT=0; deathVy=15; deathSpin=(P.x<0?1:-1)*7; shake=1.4; stopMusic(); sHit(); vib([55,35,95]);
-  if(player) player.scale.set(1,1,1); el('combovig').style.opacity=0; el('combobar').style.opacity=0;
+  if(player) player.scale.set(1,1,1); el('combovig').style.opacity=0; el('combobar').style.opacity=0; magRing.visible=false; shieldBub.visible=false; board.visible=false;
   burst(P.x,P.y+1.2,0,26,0xff7a3d,9,0.9); burst(P.x,P.y+1.2,0,16,0xffe14d,7,0.9); }
 function deathTick(dt){ deathT+=dt; deathVy-=55*dt; P.y+=deathVy*dt;
   if(player){ player.position.y=P.y; player.rotation.x+=deathSpin*dt; player.rotation.z+=deathSpin*0.5*dt; }
@@ -1100,6 +1105,8 @@ function update(dt){
   pitch += (pitchT-pitch)*Math.min(1,dt*8); player.rotation.x=pitch;
   shadow.position.set(P.x, support+0.02, 0); shadow.scale.setScalar(Math.max(0.4,1-(P.y-support)*0.05));
   board.visible=pHover>0; if(pHover>0){ board.position.set(P.x, P.y+0.1+Math.sin(tRun*12)*0.05, 0); board.rotation.z=(laneOf(P.lane)-P.x)*0.15; }
+  magRing.visible=pMag>0; if(pMag>0){ magRing.position.set(P.x,0.15,0); magRing.scale.setScalar(1.3+Math.sin(tRun*6)*0.25); magRing.material.opacity=0.3+Math.sin(tRun*6)*0.15; }   // pulsing magnet field
+  shieldBub.visible=pShield; if(pShield){ shieldBub.position.set(P.x,P.y+1.2,0); shieldBub.scale.setScalar(1+Math.sin(tRun*4)*0.05); }   // shield bubble
   // camera
   camera.position.x += (P.x*0.5 - camera.position.x)*Math.min(1,dt*6);
   camDip += ((P.roll>0?1:0)-camDip)*Math.min(1,dt*8);   // dip the camera while rolling — sells the duck under the bar
