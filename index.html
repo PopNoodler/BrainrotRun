@@ -175,12 +175,12 @@
   <button class="btn2" id="quitBtn">🏠 QUIT TO MENU</button>
 </div>
 
-<div id="verTag">BRAINROT RUSH 3D v83</div>
+<div id="verTag">BRAINROT RUSH 3D v84</div>
 <div id="err" style="position:fixed;left:8px;right:8px;bottom:24px;z-index:30;display:none;background:rgba(120,10,20,.92);color:#fff;font:600 12px monospace;padding:8px 12px;border-radius:8px;white-space:pre-wrap"></div>
 
 <script type="module">
 import * as THREE from 'three';
-const GAME_VERSION='v83';
+const GAME_VERSION='v84';
 const el=id=>document.getElementById(id);
 const setLS=(k,v)=>{ try{ localStorage.setItem(k,v); }catch(e){} };   // safe write (Safari private mode throws on setItem)
 const reduceMotion=(()=>{ try{ return matchMedia('(prefers-reduced-motion: reduce)').matches; }catch(e){ return false; } })();   // a11y: damp shake + FOV kick
@@ -749,7 +749,7 @@ function tickMissions(rs){ let rewarded=0;
     if(m.prog>=m.goal){ m.done=true; rewarded+=m.reward; }
   }
   if(rewarded){ totalCoins+=rewarded; setLS('br_coins',totalCoins); }
-  missions=missions.map(m=> m.done? newMission(missions.filter(x=>x!==m).map(x=>x.kind)) : m);
+  for(let i=0;i<missions.length;i++){ if(missions[i].done) missions[i]=newMission(missions.filter((x,j)=>j!==i).map(x=>x.kind)); }   // sequential reroll — each sees the others' NEW kinds (map version could dupe kinds when 2 completed together)
   saveMissions(); return rewarded;
 }
 
